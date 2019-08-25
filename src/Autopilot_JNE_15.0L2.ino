@@ -18,7 +18,11 @@ COMMONS LICENSING
 
 *****************************************************************************************************************************/
 /*
+<<<<<<< HEAD:src/Autopilot_JNE_15.0L2.ino
  * Code Version 2.5 works in all modes on the Mega. On the Teensy the Teensy TFT is working, the TFT keypad is working and the 
+=======
+ * Code Version 2.6 works in all modes on the Mega. On the Teensy the Teensy TFT is working, the TFT keypad is working and the 
+>>>>>>> Restructure library and source:source/Autopilot_JNE_15.0L2.ino
  * compass is working.   Buttons are working.  The GPS read is not working
  */
  #define Arduino 0
