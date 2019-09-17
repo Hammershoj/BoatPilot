@@ -303,7 +303,6 @@ double Bearing_to_destination_by_LatLon = 0;
 int WPT_index = 0;
 double Waypoint_Bearing_From[20]; // beraing from previous waypoint to this waypoint 
 float MagVar; //Magnetic Variation E is plus, W is minus 
-
   
 //******  COMPASS  ***************
 #if Compass == 0
