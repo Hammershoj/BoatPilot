@@ -18,11 +18,7 @@ COMMONS LICENSING
 
 *****************************************************************************************************************************/
 /*
-<<<<<<< HEAD:src/Autopilot_JNE_15.0L2.ino
  * Code Version 2.5 works in all modes on the Mega. On the Teensy the Teensy TFT is working, the TFT keypad is working and the 
-=======
- * Code Version 2.6 works in all modes on the Mega. On the Teensy the Teensy TFT is working, the TFT keypad is working and the 
->>>>>>> Restructure library and source:source/Autopilot_JNE_15.0L2.ino
  * compass is working.   Buttons are working.  The GPS read is not working
  */
  #define Arduino 0
@@ -37,7 +33,7 @@ COMMONS LICENSING
   #include <EEPROM.h>
 /******       USER INPUT       ********/
 
-#define Compass 0 //  0 for Pololu, 1 for BNO055
+#define Compass 1 //  0 for Pololu, 1 for BNO055
 #define IMU 52 // Used to select Pololu IMUs Versions and calibration set. 
     //Allowed values: 2 IMU9 V2; 93 (jacksIMU9V3); 103 (jacks IMU10V3; 51 (Jacks IMU9V5 #1); 52 (Jacks IMU9 V5 #2)
     //determines which set of calibration data is used these extra versions were added to code 7/11/17 J14.4
@@ -303,7 +299,6 @@ double Bearing_to_destination_by_LatLon = 0;
 int WPT_index = 0;
 double Waypoint_Bearing_From[20]; // beraing from previous waypoint to this waypoint 
 float MagVar; //Magnetic Variation E is plus, W is minus 
-
   
 //******  COMPASS  ***************
 #if Compass == 0

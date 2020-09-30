@@ -179,7 +179,6 @@ void BNO_RestoreCal()
       //  displaySensorOffsets(calibrationData);
 
         //Serial.println("\n\nRestoring Calibration data to the BNO055...");
-        lcd.begin(20,4);
         lcd.setCursor(0,0);
         lcd.print ("LOADING BNO DATA");
         bno.setSensorOffsets(calibrationData);
