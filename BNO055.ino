@@ -201,8 +201,8 @@ void BNO_SaveCal()
     displaySensorOffsets(newCalib);
 
     //Serial.println("\n\nStoring calibration data to EEPROM...");
-    lcd.clear();
-    lcd.print("Storing Calibration");
+    //lcd.clear();
+    //lcd.print("Storing Calibration");
     eeAddress = 0;
     sensor_t sensor;
     bno.getSensor(&sensor);
