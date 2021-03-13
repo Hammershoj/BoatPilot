@@ -435,9 +435,6 @@ void KeyHeld(char keyin){
           Accept_Terms = 0;  // this quits printing the Terms and conditions on start up
           Screen = 0;  
           toggle = false; // resets key 3 to tack mode instead of wind mode
-        #if Board == Teensy
-          lcd.init();          
-        #endif
         #if Board == Arduino
           //lcd.begin();
         #endif
