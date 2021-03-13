@@ -335,23 +335,17 @@ LPS ps;
 #include <RF24.h>
 
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
-#if Board == Arduino //  this does not work or appear to be needed on Teensy    
-    // For printf support on RF information
-    int serial_putc( char c, FILE * ) 
-    {
-      Serial.write( c );
-      return c;
-    }
-    //  radio CE,CS pins
-   RF24 radio(9,10);
-#endif
+// For printf support on RF information
+int serial_putc( char c, FILE * ) 
+{
+  Serial.write( c );
+  return c;
+}
+//  radio CE,CS pins
+RF24 radio(9,10);
 
-#if Board == Teensy   
-    //  radio CE,CS pins
-   RF24 radio(6,5);
-#endif
 
-//  RF DATA STRUCTURE 
+/  RF DATA STRUCTURE 
 // The sizeof this struct should not exceed 32 bytes
 // Change this when uploading to each Arduino
 
