@@ -327,80 +327,6 @@ LPS ps;
   float temperature;
 #endif
 
-/** RADIO RF24 DECLARATIONS ***/
-
-#if RF24_Attached == 1
-//#include <SPI.h>
-#include <nRF24L01.h>
-#include <RF24.h>
-
-const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
-// For printf support on RF information
-int serial_putc( char c, FILE * ) 
-{
-  Serial.write( c );
-  return c;
-}
-//  radio CE,CS pins
-RF24 radio(9,10);
-
-
-/  RF DATA STRUCTURE 
-// The sizeof this struct should not exceed 32 bytes
-// Change this when uploading to each Arduino
-
-//boolean sender = 1;// 1 is trnsmitter and 0 is receiver
-int RFdata_set;
-// Print some info to serial after this number of packets
-//unsigned long printRate = 100;
-
- char KeyIn2; // to test key data from other radio
- // RF24 packet size limit 32 bytes
- 
-   struct RF_DATA
-     {
-      // total data per packet is 32 byte. int = 2, float = 4, + char text
-// #if Board == Teensy
-      char RFD_text[8];
-      int16_t RFD_int1;
-      int16_t RFD_int2;
-      int16_t RFD_int3;
-      int16_t RFD_int4;
-      int8_t  RFD_int5;
-      int16_t RFD_int6;
-      int16_t RFD_int7;
-      int16_t RFD_int8;
-      int8_t  RFD_int9;
-      int16_t RFD_int10; // BNO Cal Status
-      int16_t RFD_int11;
-      int16_t RFD_int12;
-      int16_t RFD_int13;
- // #endif
-/*
-  #if Board == Arduino
-      char RFD_text[8];
-      int RFD_int1;
-      int RFD_int2;
-      int RFD_int3;
-      int RFD_int4;
-      byte RFD_int5;
-      int RFD_int6;
-      int RFD_int7;
-      int RFD_int8;
-      byte RFD_int9;
-      int RFD_int10;
-      int RFD_int11;
-      int RFD_int12;
-      int RFD_int13;
-  #endif
- */ 
-
-     }; // end RF_DATA1 structure    
-    RF_DATA RFdata; //NAME THE DATA STRUCTURE
-
-// End Radio Declarations  
-#endif
-
 // LCD library code:
 //LiquidCrystal lcd(27,28,29,30,31,32); // for traditional LCD wiring
 #include <LiquidCrystal_I2C.h> // for LCD-I2c Serial
@@ -508,7 +434,7 @@ boolean toggle = false;
 
 #if Wind_Input == 1
  #include <SoftwareSerial.h>
- SoftwareSerial SoftSerial1 =  SoftwareSerial(11, 12); // RX, TX may need something different for Teensy
+ SoftwareSerial SoftSerial1 =  SoftwareSerial(11, 12); // RX, TX 
  int SoftSerial1_Bytes;
  byte byteWind;
  int count_b;
@@ -782,18 +708,7 @@ delay(1000); // give chip some warmup on powering up
   #define Serial_MotorControl Serial2
 #endif
 
-
-
- #if Board == Teensy 
- #define Serial_MotorControl Serial4
-   //Wire.setSDA(A3); // not required if I2C on teensy A4 and A5, but needed if A2 A3 used
-   //Wire.setSCL(A2);
-#if TFT_Used   
-   Init_Teensy_TFT();
-#endif   
-   // add pinmodes for teensy switches
- #endif
-    Serial_MotorControl.begin(19200); //Serial output for the Pololu Motor Controller 
+ Serial_MotorControl.begin(19200); //Serial output for the Pololu Motor Controller 
  delay( 1000);
  
  #if Wind_Input == 1
@@ -813,36 +728,6 @@ delay(1000); // give chip some warmup on powering up
 
 keypad.addEventListener(keypadEvent); //add an event listener for this keypad 
 
-#if RF24_Attached == 1
-// Radio Setup 
-
-#if Board  == Arduino 
-  fdevopen( &serial_putc, 0 ); // for printf
-  attachInterrupt(digitalPinToInterrupt(2), Recv_Data, CHANGE);
-#endif
-
-#if Board == Teensy 
-  attachInterrupt(digitalPinToInterrupt(4), Recv_Data, CHANGE);
-#endif
-  radio.begin(); 
-  radio.setChannel(108); // default channel 76
-  Serial.print("Radio Channel "); Serial.println(radio.getChannel());  
-  
-    radio.openWritingPipe(pipes[0]);
-    radio.openReadingPipe(1,pipes[1]);
-  int dataSize = sizeof(RF_DATA);
-  Serial.print("Size of RF_DATA1: "); Serial.println(dataSize);
-  if ( dataSize > 32 )
-    Serial.println("***  RF_DATA1 struct is too large ***");
-  radio.maskIRQ(1,1,0); // masks out Tx-ok and Tx fail interrupt only on data received http://tmrh20.github.io/RF24/
-  radio.setPALevel(RF24_PA_MAX);
-  radio.setDataRate(RF24_250KBPS); // slower data for better range and reliability
-  radio.setChannel(108);  // 0 to 124 higher end less WiFi interference, this did not work
-  radio.printDetails();
-  radio.startListening();
-//  End Radio Setup  
-#endif 
-   
  #if Compass == 0
  //SETUP FOR MinIMU9 
  lcd.print("Starting IMU");
