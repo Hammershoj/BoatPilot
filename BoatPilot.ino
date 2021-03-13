@@ -18,12 +18,11 @@ COMMONS LICENSING
 
 *****************************************************************************************************************************/
 /*
- * Code Version 2.5 works in all modes on the Mega. On the Teensy the Teensy TFT is working, the TFT keypad is working and the 
+ * Code Version 2.6 works in all modes on the Mega. On the Teensy the Teensy TFT is working, the TFT keypad is working and the 
  * compass is working.   Buttons are working.  The GPS read is not working
  */
  #define Arduino 0
- #define Teensy 1
- #define Board Arduino//  0 = Arduino or  1 = Teensy
+ #define Board Arduino
 
   #include <Keypad.h>
   #include <LiquidCrystal.h>
@@ -41,7 +40,7 @@ COMMONS LICENSING
 #define GPS_Used 1 // 1 to include GPS code, 0 to exclude it
 #define Motor_Controller 4  // 1 for Pololu Qik dual controller, 2 for Pololu Trex dual controller, 3 for Pololu Simple Controller, cfh 09.06.2019 mode 4 for dual relay controller + solenoid clutch
 #define Clutch_Solenoid 1 // 1 a clutch solenoid is used, 0 is not used, currently clutch solenoid does not work with single Simple Pololou Controller
-int RUDDER_MODE = 0; // 0 uses rudder position, 1 does not   // cfh 15.06.2019 changed to variable and not predefined const
+int RUDDER_MODE = 1; // 0 uses rudder position, 1 does not   // cfh 15.06.2019 changed to variable and not predefined const
 boolean Change_rudder_mode = false;  // cfh 15.06.2019 added to allow for user input to change RUDDER_MODE
 #define RF24_Attached 0 // 0 if RF 24 radio modules are not attached, 1 if they are used
 #define Wind_Input 0 // 1 to use NMEA wind data. 0 to not use wind data
@@ -409,25 +408,9 @@ int RFdata_set;
 #endif
 
 // LCD library code:
-#if Board == Arduino
- //LiquidCrystal lcd(27,28,29,30,31,32); // for traditional LCD wiring
-  #include <LiquidCrystal_I2C.h> // for LCD-I2c Serial
-  LiquidCrystal_I2C lcd(0x27,20,4); //Addr: 0x27, 20 chars & 4 lines, for serial LCD
-#endif
-
-/* commented out by cfh because using serial LCD with Arduino
-// initialize the LCD with the numbers of the interface pins FOR LCD pins (RS,E,D4,D5,D6,D7)
-LiquidCrystal lcd(41,43,45,47,49,39); // matches Jack's wiring
-//LiquidCrystal lcd(39,41,43,45,47,49); matches Fritz JNE Autopilot V6D
-long lcdtimer=0;   //LCD Print timer
-  #define LCD_Contrast_Pin 7 // this pin can be used to control to LCD V0 for for contrast control , Conflict RX3 on Teensy
-#endif
-*/
-#if Board == Teensy
- //LiquidCrystal lcd(27,28,29,30,31,32); // for traditional LCD wiring
-  #include <LiquidCrystal_I2C.h> // for LCD-I2c Serial
-  LiquidCrystal_I2C lcd(0x3F,20,4); //Addr: 0x3F, 20 chars & 4 lines, for serial LCD
-#endif
+//LiquidCrystal lcd(27,28,29,30,31,32); // for traditional LCD wiring
+#include <LiquidCrystal_I2C.h> // for LCD-I2c Serial
+LiquidCrystal_I2C lcd(0x27,20,4); //Addr: 0x27, 20 chars & 4 lines, for serial LCD
 
 //  KEYPAD SETUP
 const byte ROWS = 4; //four rows
@@ -438,20 +421,8 @@ char keys[ROWS][COLS] = {
   {'7','8','9'},
   {'*','0','#'}
 };
-#if Board == Teensy
-byte rowPins[ROWS] = {38,33,34,36}; //jack's Teensy
-byte colPins[COLS] = {37,39,35}; 
-#endif
-#if Board == Arduino
-//byte rowPins[ROWS] = {23,25,27,29,}; //connect to the row pinouts of the keypad
-//byte colPins[COLS] = {31,33,35}; //connect to the column pinouts of the keypad
-//byte rowPins[ROWS] = {34,44,42,38}; //connect to the row pinouts of the keypad  JACK'S KEYPAD
-//byte colPins[COLS] = {36,32,40}; //connect to the column pinouts of the keypad  JACK'S KEYPAD
-//byte rowPins[ROWS] = {25,35,33,29}; //Use these with Fritz Diagram 6C and 6d
-//byte colPins[COLS] = {27,23,31}; //Use these with Fritz Diagram 6C and 6D
-  byte rowPins[ROWS] = {23,25,27,29}; //Use these with Fritz Diagram 6C and 6d
-  byte colPins[COLS] = {31,33,35}; //Use these with Fritz Diagram 6C and 6D
-#endif
+byte rowPins[ROWS] = {23,25,27,29}; //Use these with Fritz Diagram 6C and 6d
+byte colPins[COLS] = {31,33,35}; //Use these with Fritz Diagram 6C and 6D
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 char key = 0;
 boolean toggle = false;
@@ -788,9 +759,11 @@ delay(1000); // give chip some warmup on powering up
    Serial.begin(9600); // Serial conection to Serial Monitor
    //Serial1.begin(57600); //Communication to Serial Remote
 
+/*
 #if GPS_Used == 1
  Serial_GPS.begin(GPSBaud); // input data from second Arduino MEGA with GPS data using Easy Transfer
 #endif
+*/
    Serial.print("Setup started and Serial Opened");
    
 #if Board == Arduino
@@ -834,17 +807,9 @@ delay(1000); // give chip some warmup on powering up
    pinMode(11,INPUT);
    SoftSerial1.begin(4800);
   #endif
-  #if Board == Teensy
-    //put serial assignment for Teensy wind reading
-  #endif
  #endif
 
-/*   #if Board == Arduino
-   #if GPS_Used == 1
-    ET.begin(details(ETdata), &Serial3);
-   #endif
-   #endif
-*/
+
 #if Board == Arduino
   //lcd.begin(20,4); // regular LCD
   lcd.begin(); // for LCD_I2C
@@ -852,22 +817,7 @@ delay(1000); // give chip some warmup on powering up
   lcd.setCursor(0, 0);
 #endif
 
- /* commented out by cfh because using serial LCD with Arduino
- #if Board == Arduino
-  pinMode (LCD_Contrast_Pin, OUTPUT); //LCD Contrast Pin //  conflict with teensy Serial3 could be reassigned
-  analogWrite(LCD_Contrast_Pin, LCD_Contrast); // pwm control of LCD contrast  Replaces 10K pot for contrast control 
- lcd.begin(20,4);
- lcd.setCursor(0,0);
- #endif
-*/
-#if Board == Teensy
-  //lcd.begin(20,4); // regular LCD
-  lcd.init(); // for LCD_I2C
-  lcd.backlight(); // for LCD_I2C
-  lcd.setCursor(0, 0);
-#endif
-
- keypad.addEventListener(keypadEvent); //add an event listener for this keypad 
+keypad.addEventListener(keypadEvent); //add an event listener for this keypad 
 
 #if RF24_Attached == 1
 // Radio Setup 
@@ -965,15 +915,7 @@ delay(1000); // give chip some warmup on powering up
 /*********************************************/
 void loop()
 {
- #if Compass == 0
-  if(just_started)
-  {  setup();  //this runs setup a second time because I (JE) find gyros zero state does not initialize when powered up, runs once
-     just_started = 0;
-  }
- #endif 
- /**********************************************/
- #if Board == Arduino 
-   
+ 
    //cfh commented out org code and turned sw1 true as default
    sw1 = true;
    //sw1 = digitalRead(48); // V3 
@@ -992,29 +934,19 @@ void loop()
       Mode = "OFF";
      // heading_to_steer = 0;
    } // end if(!sw1 || !sw2)
-    //Serial.print(" Use_CTS = "); Serial.println(Use_CTS);    
- #endif // end if Board == Arduino 
+ 
+ 
    //Serial.print(" run KEYPAD ");
    KEYPAD();
 
    if (Accept_Terms) Terms_and_Conditions();
       //  Remote_Keypad();
  
- #if Board == Teensy
- #if TFT_Used 
-   //if switches used on Teensy design add Teensy switch actions here
-   Get_Touchscreen_Input(); 
-   #endif
- #endif
- 
   //#if RF24_Attached == 1 // this call was replaced with an interrupt structure
   //  Recv_Data();
   //#endif
-   //Serial.println(" before A_P_Loop ");
-   
-   A_P_Loop(); // Autopilot Loop
+  A_P_Loop(); // Autopilot Loop
 
-   //Serial.println(" after A_P_Loop ");
  }    
 /*********************************************/
 /* end main loop */

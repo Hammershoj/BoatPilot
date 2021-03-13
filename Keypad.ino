@@ -218,7 +218,7 @@ void KeyPressed(char keyin)
              
              if(Steering_Mode != 1 && Steering_Mode != 3 && Steering_Mode != 22 && Steering_Mode !=4)
              {
-                lcd.begin();
+                //lcd.begin();
                 lcd.setCursor(6,2);
                 lcd.print("WRONG MODE");  // this would be a good place to put a audible alarm beep
                // delay(250);
@@ -281,7 +281,7 @@ void KeyPressed(char keyin)
              
              if(Steering_Mode != 1 && Steering_Mode != 3 && Steering_Mode != 22 && Steering_Mode !=4)
              {
-                lcd.begin();
+                //lcd.begin();
                 lcd.setCursor(6,2);
                 lcd.print("WRONG MODE");  // this would be a good place to put a audible alarm beep
                 delay(250);
@@ -318,7 +318,7 @@ void KeyPressed(char keyin)
              
              if(Steering_Mode != 1 && Steering_Mode != 3 && Steering_Mode != 22 && Steering_Mode != 4)
              {
-               lcd.begin();
+               //lcd.begin();
                 lcd.setCursor(6,2);
                 lcd.print("WRONG MODE");
                 delay(250);
@@ -369,7 +369,7 @@ void KeyPressed(char keyin)
              
              if(Steering_Mode != 1 && Steering_Mode != 3 && Steering_Mode != 22 & Steering_Mode !=4)
              {
-               lcd.begin();
+               //lcd.begin();
                lcd.setCursor(6,2);
                lcd.print("WRONG MODE");
                delay(250);
@@ -439,7 +439,7 @@ void KeyHeld(char keyin){
           lcd.init();          
         #endif
         #if Board == Arduino
-          lcd.begin();
+          //lcd.begin();
         #endif
         #if BEARINGRATE_OFFSET == 1
           bearingrate_Offset = 0; // bearingrate_Offset applied in Tab Subs void Bearing_Rate()
