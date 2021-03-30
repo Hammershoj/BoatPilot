@@ -30,6 +30,19 @@ COMMONS LICENSING
   // cfh 15.06.2019
   #include <SoftwareSerial.h>
   #include <EEPROM.h>
+
+// OLED +compass
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
 /******       USER INPUT       ********/
 
 #define Compass 1 //  0 for Pololu, 1 for BNO055
@@ -80,7 +93,7 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
  float Tack_rudder_speed = .5; // rudder speed during tack , value * full speed, will use min of tack speed and regular speed, user adjust
  float Rudder_Offset = 0; // see notes 10.21.16
  float bearingrate_Offset = 0;
- float MagVar_default = 2.5;// 2.5 Avg west coast DK  User should keep up to date for loaction.  Pgm will use GPS value if available + east, - west
+ float MagVar_default = 2.5;// 2.5 Avg west coast DK  User should keep up to date for location.  Pgm will use GPS value if available + east, - west
 
  boolean Serial_Remote_Is_Connected = 0  ; // 1 remote connected, 0 remote not connected Pgm hangs up if remote data is sent and remote is not connected
  boolean GPS_Auto_Steer = 1; // 0 will cause GPS steering to go to compass mode and maintain heading if waypoint reached. 
@@ -131,7 +144,7 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
 
  //*************  GPS USERS INPUT  *******************
 
-#if GPS_Used ==1  
+#if GPS_Used == 1  
   #define GPS_source 1  //  1 means GPS is done onboard main AP board, 2 means a separate board is used and data read in with Easy Transfer 
   #define Serial_GPS Serial1 
   //static const int RXPin = 3, TXPin = 2;  // cfh 15.06.2019
@@ -144,9 +157,10 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
   
 // cfh end
 
-  int Input_Source = 4; // 1 = Garmin GPS60CSX(has $GPRMC & $GPAPB // 
-     // 2= Nobeltec (missing Last term of $GPRMC and $GPAPB for GPS status. note seems to work with GPS 60CSX in Source 2
-     //3 = same as 1 may need to change 198 c does not have APB but does have BOD
+  int Input_Source = 4; 
+     // 1 = Garmin GPS60CSX(has $GPRMC & $GPAPB // 
+     // 2 = Nobeltec (missing Last term of $GPRMC and $GPAPB for GPS status. note seems to work with GPS 60CSX in Source 2
+     // 3 = same as 1 may need to change 198 c does not have APB but does have BOD
      // 4 = TinyGPS  added by cfh 15.06,2019
    #define LatLon_decimals 0 // Use print_NEMA to determine number of decimals NOTE IF SET TO ZERO CODE WILL AUTO DETECT SET VALUE MANUALLY IF HAVING TROUBLE
 
@@ -309,7 +323,7 @@ float MagVar; //Magnetic Variation E is plus, W is minus
  #include <Adafruit_Sensor.h>
  #include <Adafruit_BNO055.h>
  #include <utility/imumaths.h>
- #include <EEPROM.h>
+
   Adafruit_BNO055 bno = Adafruit_BNO055(55);
  #define BNO055_SAMPLERATE_DELAY_MS (100)
   int eeAddress = 0;
@@ -470,208 +484,7 @@ float roll;
 float pitch;
 float yaw;
 
-#if Compass == 0
-// setup data for MinIMU9 from Tab minIMU9AHRS of Pololu software
-int SENSOR_SIGN[9] = {1,-1,-1, -1,1,1, 1,-1,-1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
-// tested with Arduino Uno with ATmega328 and Arduino Duemilanove with ATMega168
-// LSM303 accelerometer: 8 g sensitivity
-// 3.8 mg/digit; 1 g = 256
-#define GRAVITY 256  //this equivalent to 1G in the raw data coming from the accelerometer 
-// L3G4200D gyro: 2000 dps full scale  see tab I2C line 60 to set Full scale value
-// 70 mdps/digit; 1 dps = 0.07 use .07 for FS 2000dps, use .00875 for FS 245 dps. see I2C about line 64 to set full scale
-#define Gyro_Gain_X .00875 //X axis Gyro gain .07 for FS 2000 DPS, .00875 for full scale of 245 degrees per second
-#define Gyro_Gain_Y .00875 //Y axis Gyro gain
-#define Gyro_Gain_Z .00875 //Z axis Gyro gain
-#define Gyro_Scaled_X(x) ((x)*ToRad(Gyro_Gain_X)) //Return the scaled ADC raw data of the gyro in radians for second
-#define Gyro_Scaled_Y(x) ((x)*ToRad(Gyro_Gain_Y)) //Return the scaled ADC raw data of the gyro in radians for second
-#define Gyro_Scaled_Z(x) ((x)*ToRad(Gyro_Gain_Z)) //Return the scaled ADC raw data of the gyro in radians for second
-
-// LSM303 magnetometer calibration constants; use the Calibrate example from
-// the Pololu LSM303 library to find the right values for your board
-
-// this is data for Jacks IMU9V2,
-#if IMU == 2 // Jack's version 2 IMU calibration 
-  #define M_X_MIN -663   
-  #define M_Y_MIN -683
-  #define M_Z_MIN -611   
-  #define M_X_MAX 453
-  #define M_Y_MAX 427
-  #define M_Z_MAX 460 
-#endif
-
-#if IMU == 93 // This is the data for Jacks IMU9V3  new data 7/11/17 taken on the boat
-  #define M_X_MIN -3525 // -3350   
-  #define M_Y_MIN -3473 // -3276
-  #define M_Z_MIN -3398 //-3284   
-  #define M_X_MAX 3600 //3500
-  #define M_Y_MAX 3226 //3150
-  #define M_Z_MAX 2802 //2670 
-#endif
-
-#if IMU == 103 // IMU-10 V3
-  // cal data for jack's IMU10 V3 calibrated on the boat 7/11/17
-  #define M_X_MIN -3290  
-  #define M_Y_MIN -3288
-  #define M_Z_MIN -2840  
-  #define M_X_MAX 3611
-  #define M_Y_MAX 3553
-  #define M_Z_MAX 4127 
-#endif
-
-#if IMU == 51 // this is for IMU V5 #1, put your cal data here
-#define IMU_V5 //  This is an added line that came with Pololu IMU AHRS code for using Pololu IMU V5
-   // necessary because library function calls are different for V2 - V3 and the calls for V5
-// comment out one of these two calibration data sets
-#define M_X_MIN -1955 // values for Jack's IMU V5 #1 cal 7/11/17 on the boat
-#define M_Y_MIN -4857
-#define M_Z_MIN 728
-#define M_X_MAX 5459
-#define M_Y_MAX 5518
-#define M_Z_MAX 7758
-#endif
-
-#if IMU == 52 // this is for IMU V5 #2, Can be used for a second IMU 9 or 10 second calibration set for testing
-#define IMU_V5 //  This is an added line that came with Pololu IMU AHRS code for using Pololu IMU V5
-#define M_X_MIN -3678 // -3236 , -3216 // values for cfh's IMU V5 cal 15/06/19
-#define M_Y_MIN -3607 //-3910 , -3829
-#define M_Z_MIN -3414 //-3569 , -3401
-#define M_X_MAX 3419 //3519 , 3519
-#define M_Y_MAX 2343 //2375 , 2086
-#define M_Z_MAX 3518 //3234 , 3174
-#endif
-
-#define Kp_ROLLPITCH 0.02
-#define Ki_ROLLPITCH 0.00002
-#define Kp_YAW 1.2
-#define Ki_YAW 0.00002
-
-float G_Dt=0.02;    // Integration time (DCM algorithm)  We will run the integration loop at 50Hz if possible
-int AN[6]; //array that stores the gyro and accelerometer data
-int AN_OFFSET[6]={0,0,0,0,0,0}; //Array that stores the Offset of the sensors
-int gyro_x;
-int gyro_y;
-int gyro_z;
-int accel_x;
-int accel_y;
-int accel_z;
-int magnetom_x;
-int magnetom_y;
-int magnetom_z;
-float c_magnetom_x;
-float c_magnetom_y;
-float c_magnetom_z; 
-float MAG_Heading;
-
-float Accel_Vector[3]= {0,0,0}; //Store the acceleration in a vector
-float Gyro_Vector[3]= {0,0,0};//Store the gyros turn rate in a vector
-float Omega_Vector[3]= {0,0,0}; //Corrected Gyro_Vector data
-float Omega_P[3]= {0,0,0};//Omega Proportional correction
-float Omega_I[3]= {0,0,0};//Omega Integrator
-float Omega[3]= {0,0,0};
-
-// Euler angles
-
-float errorRollPitch[3]= {0,0,0}; 
-float errorYaw[3]= {0,0,0};
-
-byte gyro_sat=0;
-
-float DCM_Matrix[3][3]= {
-  {
-    1,0,0  }
-  ,{
-    0,1,0  }
-  ,{
-    0,0,1  }
-}; 
-float Update_Matrix[3][3]={{0,1,2},{3,4,5},{6,7,8}}; //Gyros here
-float Temporary_Matrix[3][3]={
-  {
-    0,0,0  }
-  ,{
-    0,0,0  }
-  ,{
-    0,0,0  }
-};
-// end IMU-9 data
-#endif // end if compass == 0
-/************************************/
-
-/*
-#if Board == Arduino
-#if GPS_Used == 1
-// Set up for Easy Transfer to receive GPS data 
- //create object
-  EasyTransfer ET, ET2; 
- 
-  struct RECEIVE_DATA_STRUCTURE{
-    //put your variable definitions here for the data you want to receive
-    //THIS MUST BE EXACTLY THE SAME ON THE OTHER ARDUINO
-  float SD_course;
-  float SD_course_to_steer;
- // char SD_CTS_MorT[2];
-  float SD_SOG;
-  float SD_MagVar;
-  float SD_XTE;
-  float SD_XTE_differential_error;
-//  char SD_XTE_LR[2];
- // char SD_XTE_unit[2];
-  char SD_Waypoint_next[11]; 
-//  boolean SD_NEMA_sentence;
-  boolean SD_GPRMC_fix;
-  boolean SD_GPAPB_fix;
-  float SD_Bearing_origin_to_destination; // Same as course to steer
-  char SD_BOD_MorT[2];
- // char SD_Origin_Waypoint[11];
-  float SD_Bearing_to_destination;
- // char SD_BTD_MorT[2];
-  float SD_Range_Destination;
- // float SD_Velocity_towards_destination; 
-  long SD_UTC;
-  //long SD_Date;
- // float SD_Lat_current;
-//  float SD_Lon_current;
-  float SD_NEXT_TURN;
-  // int SD_Wind;
- // int SD_Speed;  // wind speed
- // float SD_Time_decimal;
-  };
-  
-  //give a name to the group of data
-  RECEIVE_DATA_STRUCTURE ETdata;
-  #endif //
-  #endif
-/*********************************************************************************/  
-  // Second ETData structure to send data to to remote controller
-/*    
-  struct SEND_DATA_STRUCTURE{  //Arduino to Arduino communication Eazy Transfer by Bill Porter
-    //put your variable definitions here for the data you want to send
-    //THIS MUST BE EXACTLY THE SAME ON THE OTHER ARDUINO
-  float course;
-  float SOG;
-  float MagVar;
-  float XTE;
-  char Waypoint_next[11]; 
-  float Bearing_origin_to_destination;
-  float Bearing_to_destination;
-  float Range_Destination;
-  //long UTC;
-  float Next_Turn;
-  float heading;
-  float heading_to_steer;
-  float course_to_steer;
-  float bearingrate;
-  float rudder_position;
-  char Mode[5];
-  int MSG;
-
-  
-  }; // End Data Sttructure  
-  
-  SEND_DATA_STRUCTURE ET2data;
-*/  
-
- //*  SETUP    SETUP   SETUP   ***** 
+ //*******  SETUP    SETUP   SETUP   ***** 
 
 void setup() {
  
@@ -679,12 +492,7 @@ delay(1000); // give chip some warmup on powering up
    Serial.begin(9600); // Serial conection to Serial Monitor
    //Serial1.begin(57600); //Communication to Serial Remote
 
-/*
-#if GPS_Used == 1
- Serial_GPS.begin(GPSBaud); // input data from second Arduino MEGA with GPS data using Easy Transfer
-#endif
-*/
-   Serial.print("Setup started and Serial Opened");
+   Serial.println("Setup started and Serial Opened");
    
 #if Board == Arduino
    pinMode(48, INPUT); //SW1
@@ -697,13 +505,13 @@ delay(1000); // give chip some warmup on powering up
   digitalWrite(relay_Turn_rudder_right, HIGH);
   digitalWrite(relay_Engage_solenoid, HIGH);
   Serial.print("Rudder mode: ");Serial.println(RUDDER_MODE);
-  float Stored_rudder_mode; 
-  EEPROM.get(1,Stored_rudder_mode);
-  Serial.print("Stored rudder mode: "); Serial.println(Stored_rudder_mode);
-  #if (Stored_rudder_mode == 0 || Stored_rudder_mode == 1)
-    RUDDER_MODE = Stored_rudder_mode;
-    Serial.print("rudder mode: "); Serial.println(Stored_rudder_mode);
-  #endif
+  //float Stored_rudder_mode; 
+  //EEPROM.get(1,Stored_rudder_mode);
+  //Serial.print("Stored rudder mode: "); Serial.println(Stored_rudder_mode);
+  //#if (Stored_rudder_mode == 0 || Stored_rudder_mode == 1)
+  //  RUDDER_MODE = Stored_rudder_mode;
+  //  Serial.print("rudder mode: "); Serial.println(Stored_rudder_mode);
+  //#endif
   // end cfh add
   #define Serial_MotorControl Serial2
 #endif
@@ -717,51 +525,14 @@ delay(1000); // give chip some warmup on powering up
    SoftSerial1.begin(4800);
   #endif
  #endif
-
-
-#if Board == Arduino
   //lcd.begin(20,4); // regular LCD
   lcd.begin(); // for LCD_I2C
-  lcd.backlight(); // for LCD_I2C
+  //lcd.backlight(); // for LCD_I2C
   lcd.setCursor(0, 0);
-#endif
 
-keypad.addEventListener(keypadEvent); //add an event listener for this keypad 
+  keypad.addEventListener(keypadEvent); //add an event listener for this keypad 
 
- #if Compass == 0
- //SETUP FOR MinIMU9 
- lcd.print("Starting IMU");
-     I2C_Init();
-   Serial.println("Pololu MinIMU-9 + Arduino AHRS");
-   //digitalWrite(STATUS_LED,LOW);
-  delay(1500);
-  Accel_Init();
-  Compass_Init();
-  Gyro_Init();  
-  delay(20);  
-  for(int i=0;i<32;i++)    // We take some readings...
-    {
-    Read_Gyro();
-    Read_Accel();
-    for(int y=0; y<6; y++)   // Cumulate values
-      AN_OFFSET[y] += AN[y];
-    delay(20);
-    }    
-  for(int y=0; y<6; y++)
-    AN_OFFSET[y] = AN_OFFSET[y]/32;   
-    AN_OFFSET[5]-=GRAVITY*SENSOR_SIGN[5];  
-    Serial.println("Offset:");
-  for(int y=0; y<6; y++)
-    Serial.println(AN_OFFSET[y]);
  
-  delay(2000);
- // digitalWrite(STATUS_LED,HIGH);
-    
-  timer=millis();
-  delay(20);
-  counter=0;
-  // End setup data for MinIMU9
- #endif
  
   if(Motor_Controller == 1) Serial_MotorControl.write(170); // sends packet that is detected for auto baud rate detection and starts normal operation not need for Trex
   if(Motor_Controller == 3)  // ditto for Pololu Simple controller
@@ -771,22 +542,35 @@ keypad.addEventListener(keypadEvent); //add an event listener for this keypad
   }
   if(Motor_Controller == 4) Serial_MotorControl.write(170); // cfh 09.06.2019 added, but not in use
  
- #if Compass == 1
- if(!bno.begin())
-  {
-    /* There was a problem detecting the BNO055 ... check your connections */
-    //Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-    lcd.setCursor(0,0);
-    lcd.print(" No BNO055");
-    while(1);
-  }
- //  Get and restore BNO Calibration offsets   
- BNO_RestoreCal();
-#endif  // Compass == 1
+  #if Compass == 1
+    Init_Compass();
+  #endif  // Compass == 1
 
-#if UseBarometer
- Init_Barometer();
-#endif
+  #if UseBarometer
+  Init_Barometer();
+  #endif
+
+  // Initialize OLED display 
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+  // Show initial display buffer contents on the screen --
+  // the library initializes this with an Adafruit splash screen.
+  display.display();
+  delay(2000); // Pause for 2 seconds
+  // Clear the buffer
+  display.clearDisplay();
+  display.setTextSize(1);      // Normal 1:1 pixel scale
+  display.setTextColor(SSD1306_WHITE); // Draw white text
+  display.setCursor(0, 0);     // Start at top-left corner
+  display.cp437(true);         // Use full 256 char 'Code Page 437' font
+  display.write("BNO055 detected");
+  display.display();
+  delay(500);  
+
  }  // end setup
   
 /*********************************************/

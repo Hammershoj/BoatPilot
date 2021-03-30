@@ -57,9 +57,9 @@ void keypadEvent(KeypadEvent key){
 void KeyPressed(char keyin)
 {  
      Serial.print("keyin = "); Serial.println(keyin);
-     Serial.print("screen = "); Serial.println(Screen);
-     switch (keyin){
+        switch (keyin){
         case '0': 
+          lcd.clear();
           Key0_Pressed();
         break; // end case 0
    
@@ -333,11 +333,11 @@ void KeyPressed(char keyin)
              #if Compass == 0
              if( Screen > 5) Screen = 0;  // cfh 15.06.2019 changed from 4 to five to include calibration screen
              #endif
+             Serial.print("screen = "); Serial.println(Screen);
             // cfh
-
             //
-             lcd.clear();
-             LCD();
+            lcd.clear();
+            LCD();
          break;
             
         case '9': 

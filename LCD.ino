@@ -4,8 +4,9 @@ void LCD(){
     // (note: counting begins with 0):
     String RP;
     int UTC_seconds;
-    //lcd.clear();
-   
+
+    if (!Screen) Screen = 0;
+
     if(Screen == 0)
     {   
      lcd.setCursor(0,0);
@@ -120,9 +121,9 @@ void LCD(){
       lcd.setCursor(0, 0);
      lcd.print(GPS_status); //no gps, no waypoint, or waypoint 
      lcd.setCursor(11,0);
-     lcd.print("Lt "); lcd.print(Lat_current);
+     //lcd.print("Lt "); lcd.print(Lat_current);
      lcd.setCursor(11,1);
-     lcd.print("Ln "); lcd.print(Lon_current);
+     //lcd.print("Ln "); lcd.print(Lon_current);
      
    //  This is a diagnostic it it prints seconds if GPS is processing
       lcd.setCursor(0,1);
@@ -239,7 +240,7 @@ void LCD(){
        
    }
 // end cfh 13.06.2019
- 
+ /*
  #if Compass == 1
      if(Screen == 5)  // Save Compass Calibration
    {
@@ -253,7 +254,7 @@ void LCD(){
      lcd.setCursor(0,3);
      if(DataStored)
       lcd.print("DATA STORED");    
-   }  // End screen = 4
+   }  // End screen = 5
  #endif  
- 
+ */
 }  // END Void LCD()
