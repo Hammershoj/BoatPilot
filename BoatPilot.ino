@@ -53,7 +53,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define GPS_Used 1 // 1 to include GPS code, 0 to exclude it
 #define Motor_Controller 4  // 1 for Pololu Qik dual controller, 2 for Pololu Trex dual controller, 3 for Pololu Simple Controller, cfh 09.06.2019 mode 4 for dual relay controller + solenoid clutch
 #define Clutch_Solenoid 1 // 1 a clutch solenoid is used, 0 is not used, currently clutch solenoid does not work with single Simple Pololou Controller
-int RUDDER_MODE = 1; // 0 uses rudder position, 1 does not   // cfh 15.06.2019 changed to variable and not predefined const
+int RUDDER_MODE = 0; // 0 uses rudder position, 1 does not   // cfh 15.06.2019 changed to variable and not predefined const
 boolean Change_rudder_mode = false;  // cfh 15.06.2019 added to allow for user input to change RUDDER_MODE
 #define RF24_Attached 0 // 0 if RF 24 radio modules are not attached, 1 if they are used
 #define Wind_Input 0 // 1 to use NMEA wind data. 0 to not use wind data
@@ -153,7 +153,7 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
   // TinyGPSPlus byteGPS;
   
   // The serial connection to the GPS device
-  //SoftwareSerial Serial_GPS(RXPin, TXPin);
+  // SoftwareSerial Serial_GPS(RXPin, TXPin);
   
 // cfh end
 
@@ -169,7 +169,7 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
   //   boolean Use_CTS = 0;  //  1 to use the CTS (course to steer) from GPS sentence $GPAPB. turn Anticipate Turns off if GPS has this feature see video
    boolean print_NEMA = 0;  //1 = print, 0 = not print, printing byte by byte input
    boolean print_GPS_buffer = 0;  //1 = print, 0 = not print, looks the same as NEMA but is the parsed incomimg sentence by sentence
-   boolean print_RMC = 0;  //1 = print, 0 = not print
+   boolean print_RMC = 0 ;  //1 = print, 0 = not print
    boolean print_APB = 0; //1 = print, 0 = not print
    boolean print_RMB = 0; //1 = print, 0 = not print
    boolean print_BOD = 0; //1 = print, 0 = not print
@@ -221,7 +221,7 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
    unsigned long long2;
    unsigned long long3;
    int int1;
-   boolean GPS_available= false;
+   //boolean GPS_available= false;
   String GPScase = "";
   String GPSheader = "";
   boolean NEMA_sentence = false;
@@ -280,7 +280,7 @@ float XTE_integral_error;
 float XTE_course_correction;
 unsigned long UTC_timer;
 unsigned long UTC_timer_old;
-boolean GPS_Available = 0;
+boolean GPS_Available = 1;
 boolean GPS_Was_Available = 0;
 int MSG = 0; // message to send number for message display on serial remote
  int j_MAX = 0;
@@ -489,11 +489,12 @@ float yaw;
 void setup() {
  
 delay(1000); // give chip some warmup on powering up
-   Serial.begin(9600); // Serial conection to Serial Monitor
-   //Serial1.begin(57600); //Communication to Serial Remote
+Serial.begin(9600); // Serial conection to Serial Monitor
+//Serial1.begin(57600); //Communication to Serial Remote
 
-   Serial.println("Setup started and Serial Opened");
-   
+Serial.println("Setup started and Serial Opened");
+Serial_GPS.begin(9600);
+
 #if Board == Arduino
    pinMode(48, INPUT); //SW1
    pinMode(46, INPUT); //SW2
@@ -527,7 +528,7 @@ delay(1000); // give chip some warmup on powering up
  #endif
   //lcd.begin(20,4); // regular LCD
   lcd.begin(); // for LCD_I2C
-  //lcd.backlight(); // for LCD_I2C
+  lcd.setBacklight(1); // for LCD_I2C
   lcd.setCursor(0, 0);
 
   keypad.addEventListener(keypadEvent); //add an event listener for this keypad 
