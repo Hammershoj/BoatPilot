@@ -1,7 +1,7 @@
 {
     "board": "arduino:avr:mega",
     "port": "COM4",
-    "programmer": "AVR ISP",
+    "programmer": "arduino:avrisp",
     "sketch": "source\\BoatPilot.ino",
     "configuration": "cpu=atmega2560"
 }

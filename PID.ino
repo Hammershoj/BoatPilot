@@ -228,8 +228,8 @@ RUDDER_MODE
 
      
      counts = analogRead(4);
-     //Serial.print("Rudder = "); // use these print lines to get counts for calibration
-     //Serial.println(counts);
+     Serial.print("Rudder = "); // use these print lines to get counts for calibration
+     Serial.println(counts);
 
      // cfh 10.07.2019  This is the rudder position formula calculating the rudder position based on calibration setttings in encoder unita (counts) and the max/min rudder position values
       if(counts >= counts_at_zero) // linear calibration from zero

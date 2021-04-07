@@ -44,7 +44,7 @@
               }
           #endif
         
-          //Steer_PID(); 
+          Steer_PID(); 
     
       } // end if counter > 8 10 Hz loop
  

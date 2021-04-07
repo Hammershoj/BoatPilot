@@ -583,7 +583,7 @@ void loop()
    //cfh commented out org code and turned sw1 true as default
    sw1 = true;
    //sw1 = digitalRead(48); // V3 
-   sw2 = digitalRead(46); // V3 
+   sw2 = digitalRead(46); // V3
   if(SW2_Used == 0) sw2 = true;  // if SW2_Used is 0 then sw2 set true so only sw1 is controling
   if (!sw1 || !sw2)  // if sw1 or sw2 is off both have to be on to engage steering either one will turn steering off
    {
