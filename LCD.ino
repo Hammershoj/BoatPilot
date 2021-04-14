@@ -59,6 +59,7 @@ void LCD(){
 
      if( RUDDER_MODE == 0)  // IF THERE IS A RUDDER POSITION INDICATOR
     {
+     RUDDER_POSITION();
      lcd.setCursor(5,3);
      lcd.print("Rud      "); // extra spaces clear old data  cfh 13.06.2019 added one space
      lcd.setCursor(9,3);
@@ -217,6 +218,7 @@ void LCD(){
  // cfh 13.06.2019
       if(Screen == 5)
    {
+      RUDDER_POSITION();
       lcd.setCursor(0,0);
       lcd.print("<1> Rudder:");
       lcd.setCursor(11,0);

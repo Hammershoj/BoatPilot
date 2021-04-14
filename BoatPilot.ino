@@ -76,7 +76,7 @@ float Kxte[3] = {.2, 0, 0}; // {.2, 4, .0004} baseline; {.05, .5, .0005}last use
   
  float Maximum_Rudder = 18; // Maximum rudder angle in degrees
 // set rudder variables as global
-     float counts_at_zero = 1020;
+     float counts_at_zero = 500;
      float counts_min = counts_at_zero -400;  //Right
      float counts_max = counts_at_zero +400;  // Left   from calibration in print statement
      float counts;

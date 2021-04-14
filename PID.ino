@@ -24,47 +24,47 @@ RUDDER_MODE
          RUDDER_POSITION(); // 9.22.17 added to update rudder position and stop rudder in Dodge Mode but good for all modes in V14.7
          if(abs(rudder_position) > Maximum_Rudder) {
             Rudder_Stop();
-            Key0_Pressed();   // turning off rudder to avoid damage !
+            //Key0_Pressed();   // turning off rudder to avoid damage !
          }
           
         if(!DODGE_MODE)
         { 
-           // if keypad "1" was pushed Steering_Mode = 1 (compass steer) and heading_to_steer was set to the then current heading  
-           MSG = 0; // null
-     #if GPS_Used      
-           if (Steering_Mode == 2 || Steering_Mode == 22) GPS_Steer();  // get compass heading to steer based on GPS Route and cross track error    
-               // adjusts gyro heading_to_steer so GPS course = GPS course_to_steer, 
-     #endif      
-  
-     #if Wind_Input == 1
-         if(Steering_Mode == 4){  //  wind steering,  actually steers compass course where heading error = wind error         
-            wind_error = wind_to_steer - Wind_Avg; // Wind_Avg calculated in Tab A_Wind
-            if (abs(wind_error) > 180) // this limits error to < 180 and makes turn short way on compass + right, - left
-              {
-                 if(wind_to_steer > Wind_Avg)  wind_error = wind_error - 360;
-                 if(wind_to_steer < Wind_Avg) wind_error = 360 + wind_error;
-              }            
-           heading_to_steer = -wind_error + heading;  // Wind Error = - Heading Error        
-           } // end Steering_Mode == 4
-    #endif  // Wind_Input
+          // if keypad "1" was pushed Steering_Mode = 1 (compass steer) and heading_to_steer was set to the then current heading  
+          MSG = 0; // null
+          #if GPS_Used      
+                if (Steering_Mode == 2 || Steering_Mode == 22) GPS_Steer();  // get compass heading to steer based on GPS Route and cross track error    
+                    // adjusts gyro heading_to_steer so GPS course = GPS course_to_steer, 
+          #endif      
+        
+          #if Wind_Input == 1
+              if(Steering_Mode == 4){  //  wind steering,  actually steers compass course where heading error = wind error         
+                  wind_error = wind_to_steer - Wind_Avg; // Wind_Avg calculated in Tab A_Wind
+                  if (abs(wind_error) > 180) // this limits error to < 180 and makes turn short way on compass + right, - left
+                    {
+                      if(wind_to_steer > Wind_Avg)  wind_error = wind_error - 360;
+                      if(wind_to_steer < Wind_Avg) wind_error = 360 + wind_error;
+                    }            
+                heading_to_steer = -wind_error + heading;  // Wind Error = - Heading Error        
+                } // end Steering_Mode == 4
+          #endif  // Wind_Input
        
         
-        // --------------------------------------------------------- Main compass steering -------------------------------------------------------------
+          // --------------------------------------------------------- Main compass steering -------------------------------------------------------------
         
-        //  heading_error = heading_to_steer - heading;  // This is the main PID proportional term for compass based steering           
-         heading_error = heading - heading_to_steer;  // This is the main PID proportional term for compass based steering   cfh 11.07.19 changed direction !        
-        // heading_error = course - heading_to_steer;  // cfh testing steering based GPS COG
+          //  heading_error = heading_to_steer - heading;  // This is the main PID proportional term for compass based steering           
+          heading_error = heading - heading_to_steer;  // This is the main PID proportional term for compass based steering   cfh 11.07.19 changed direction !        
+          // heading_error = course - heading_to_steer;  // cfh testing steering based GPS COG
           if (Wind_Steer_Direct == 1 && Steering_Mode == 4) heading_error = -wind_error; // base case wind steer uses wind indicator to dervie a compass course, this mode will just steer wind error
           if (GPS_Steer_Direct == 1 && (Steering_Mode == 2 || Steering_Mode == 22)) heading_error = course_error;// similarly gps steering is compass steering where the error is based on COG - CTS, this mode leaves out the compass
            
            // Serial.print("Wind Error "); Serial.print(wind_error); Serial.print("; heading to steer "); Serial.println(heading_to_steer);            
-           if (abs(heading_error) > 180) // this limits error to < 180 and makes turn short way on compass + right, - left
-            {
-               if(heading_to_steer > heading)  heading_error = heading_error - 360;
-               if(heading_to_steer < heading) heading_error = 360 + heading_error;
-               //if(heading_to_steer > course)  heading_error = heading_error - 360; // cfh testing steering based GPS COG
-               //if(heading_to_steer < course) heading_error = 360 + heading_error; // cfh testing steering based GPS COG
-            }
+          if (abs(heading_error) > 180) // this limits error to < 180 and makes turn short way on compass + right, - left
+          {
+              if(heading_to_steer > heading)  heading_error = heading_error - 360;
+              if(heading_to_steer < heading) heading_error = 360 + heading_error;
+              //if(heading_to_steer > course)  heading_error = heading_error - 360; // cfh testing steering based GPS COG
+              //if(heading_to_steer < course) heading_error = 360 + heading_error; // cfh testing steering based GPS COG
+          }
 
           /*
           lcd.setCursor(0,1);
@@ -228,9 +228,11 @@ RUDDER_MODE
 
      
      counts = analogRead(4);
-     Serial.print("Rudder = "); // use these print lines to get counts for calibration
-     Serial.println(counts);
-
+     if(Print_Rudder_Commands) 
+     {
+      Serial.print("Rudder = "); // use these print lines to get counts for calibration
+      Serial.println(counts);
+     }
      // cfh 10.07.2019  This is the rudder position formula calculating the rudder position based on calibration setttings in encoder unita (counts) and the max/min rudder position values
       if(counts >= counts_at_zero) // linear calibration from zero
       {
@@ -513,8 +515,8 @@ void Actual_GPS_Steering() // modified 4/25/18 to use Garmin approach for course
         rudder_command = 0;
       }
  
-    //Serial.print("Knob: "); Serial.print(Knob); 
-    //Serial.print("  CMD: "); Serial.print(rudder_command);  
+   // Serial.print("Knob: "); Serial.print(Knob); 
+   // Serial.print("  CMD: "); Serial.print(rudder_command);  
    
    /*
    motorspeed = 255/40*(rudder_command); // + = right, - = left
@@ -523,30 +525,6 @@ void Actual_GPS_Steering() // modified 4/25/18 to use Garmin approach for course
    if ( motorspeed < -1023) motorspeed = -255;
    motorspeed= abs(motorspeed);
   */
-  
-  
-   lcd.setCursor(0, 0);
-  // lcd.print("                  ");
-  // lcd.setCursor(0, 0);
-   lcd.print("CMD ");
-   lcd.print(rudder_command);
-   
-     lcd.setCursor(5,3);
-     lcd.print("Rud                "); // extra spaces clear old data
-     lcd.setCursor(9,3);
-     lcd.print(rudder_position,0);
-   
-   
- 
-   /*
-   lcd.setCursor(0,1);
-   lcd.print("speed      ");
-   lcd.setCursor(7,1);
-   lcd.print("     ");
-   lcd.setCursor(7,1);
-   lcd.print(motorspeed);
-   */
-   
    
  } // end void knob steering
  
