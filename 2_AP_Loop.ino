@@ -57,6 +57,7 @@
     counter2 = 0; 
     
     //get_GPS_data(); //  This receives the GPS data from separate Arduino, does so in 2 milliseconds 
+    
     if(Print_LCD_AP) LCD(); //This is main LCD print of GPS and Compass can be turned off to use 
     //LCD to print special purpose diagnostics
     

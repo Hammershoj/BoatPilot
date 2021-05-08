@@ -52,7 +52,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
     // see code lines this tab about 390 to 438 to enter your calibration data
 #define GPS_Used 1 // 1 to include GPS code, 0 to exclude it
 #define Motor_Controller 4  // 1 for Pololu Qik dual controller, 2 for Pololu Trex dual controller, 3 for Pololu Simple Controller, cfh 09.06.2019 mode 4 for dual relay controller + solenoid clutch
-#define Clutch_Solenoid 1 // 1 a clutch solenoid is used, 0 is not used, currently clutch solenoid does not work with single Simple Pololou Controller
+#define Clutch_Solenoid 1 // 1 a clutch solenoid is used, 0 is not used
 int RUDDER_MODE = 0; // 0 uses rudder position, 1 does not   // cfh 15.06.2019 changed to variable and not predefined const
 boolean Change_rudder_mode = false;  // cfh 15.06.2019 added to allow for user input to change RUDDER_MODE
 #define RF24_Attached 0 // 0 if RF 24 radio modules are not attached, 1 if they are used
@@ -128,7 +128,7 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
  boolean Print_PID = 0; // 
  boolean Print_UTC = 0;
  boolean print_Nav_Data = 0; // Print_1 Tab
- boolean Print_Motor_Commands = 0;  // prints rudder commands in PID tab
+ boolean Print_Motor_Commands = 1;  // prints rudder commands in PID tab
  boolean Print_Rudder_Commands = 0;  // prints rudder commands in PID tab
  boolean Print_Anticpate_Turn = 0;  // prints data from void Actual_GPS_Steering to evaluate Anticipate turn function
  int print_level=print_level_max;
@@ -147,16 +147,8 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
 #if GPS_Used == 1  
   #define GPS_source 1  //  1 means GPS is done onboard main AP board, 2 means a separate board is used and data read in with Easy Transfer 
   #define Serial_GPS Serial1 
-  //static const int RXPin = 3, TXPin = 2;  // cfh 15.06.2019
   static const uint32_t GPSBaud = 9600; // cfh 15.06.2019 
-  // The TinyGPS++ object
-  // TinyGPSPlus byteGPS;
-  
-  // The serial connection to the GPS device
-  // SoftwareSerial Serial_GPS(RXPin, TXPin);
-  
-// cfh end
-
+ 
   int Input_Source = 4; 
      // 1 = Garmin GPS60CSX(has $GPRMC & $GPAPB // 
      // 2 = Nobeltec (missing Last term of $GPRMC and $GPAPB for GPS status. note seems to work with GPS 60CSX in Source 2
@@ -389,7 +381,7 @@ boolean toggle = false;
  int Steering_Mode = 0;
  String Mode = "OFF";
  String Previous_Mode;
- boolean Steering = false;
+ boolean Steering = false;  // boolean to automatic steering is on or off independant of Steering mode
  boolean sw1_turned_on = false;
  boolean sw1 = false;
  boolean sw2 = false;
@@ -443,6 +435,11 @@ boolean toggle = false;
                            //  rudder stop will still send 0. Use to overcome starting torque. Set so if rudder error greater than the deadband the rudder
                            //  moves at a noticable but slow speed.  Higher values will be more responsive. 
    int motorspeedMAX = 3200;
+   // NEw IBT-2 setup 19.04.2021
+   int MOTORSPEED_PIN = 0; // center pin of the potentiometer
+ 
+   int RPWM_Output = 5; // Arduino PWM output pin 5; connect to IBT-2 pin 1 (RPWM)
+   int LPWM_Output = 6; // Arduino PWM output pin 6; connect to IBT-2 pin 2 (LPWM)
  #endif
 // end cfh
 
@@ -515,6 +512,11 @@ Serial_GPS.begin(9600);
   //#endif
   // end cfh add
   #define Serial_MotorControl Serial2
+  
+  // IBT-2 motorcontroller setup 20.04.2021
+  pinMode(RPWM_Output, OUTPUT);
+  pinMode(LPWM_Output, OUTPUT);
+    
 #endif
 
  Serial_MotorControl.begin(19200); //Serial output for the Pololu Motor Controller 
@@ -533,8 +535,11 @@ Serial_GPS.begin(9600);
 
   keypad.addEventListener(keypadEvent); //add an event listener for this keypad 
 
- 
- 
+  Steering_Mode = 0; // Steering mode is default off
+  Mode = "OFF"; 
+  Steering = false;  // default automatic is off at start up and reset
+  
+
   if(Motor_Controller == 1) Serial_MotorControl.write(170); // sends packet that is detected for auto baud rate detection and starts normal operation not need for Trex
   if(Motor_Controller == 3)  // ditto for Pololu Simple controller
   {
@@ -571,47 +576,31 @@ Serial_GPS.begin(9600);
   display.write("BNO055 detected");
   display.display();
   delay(500);  
+  // Clear LCD start up info
+  lcd.setCursor(0,0);
+  lcd.print("                    ");
+  lcd.setCursor(0,1);
+  lcd.print("                    ");
 
+  // read a byte from the current address of the EEPROM
+  byte value = EEPROM.read(eeAddress);
+
+  Serial.print(eeAddress);
+  Serial.print("\t");
+  Serial.print(value, DEC);
+  Serial.println();
  }  // end setup
   
 /*********************************************/
 /* main loop */
 /*********************************************/
+
 void loop()
 {
- 
-   //cfh commented out org code and turned sw1 true as default
-   sw1 = true;
-   //sw1 = digitalRead(48); // V3 
-   sw2 = digitalRead(46); // V3
-  if(SW2_Used == 0) sw2 = true;  // if SW2_Used is 0 then sw2 set true so only sw1 is controling
-  if (!sw1 || !sw2)  // if sw1 or sw2 is off both have to be on to engage steering either one will turn steering off
-   {
-     Rudder_Stop(); 
-     #if Clutch_Solenoid == 1 // if a clutch solenoid is used
-       Open_Solenoid();   // open solenoid to enable manual steering      
-     #endif
-      Steering = false;
-      //rudder_position = 0; // delete when rudder position is measured
-      rudder_command = 0; // probably delete, let rudder comand run, just don't steer
-      Steering_Mode = 0;
-      Mode = "OFF";
-     // heading_to_steer = 0;
-   } // end if(!sw1 || !sw2)
- 
- 
-   //Serial.print(" run KEYPAD ");
+   A_P_Loop(); // Autopilot Loop
    KEYPAD();
-
-   if (Accept_Terms) Terms_and_Conditions();
-      //  Remote_Keypad();
- 
-  //#if RF24_Attached == 1 // this call was replaced with an interrupt structure
-  //  Recv_Data();
-  //#endif
-  A_P_Loop(); // Autopilot Loop
-
  }    
+
 /*********************************************/
 /* end main loop */
 /*********************************************/

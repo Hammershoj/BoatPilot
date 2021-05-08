@@ -134,7 +134,6 @@ RUDDER_MODE
         if(!Steering)
            {
              rudder_command = 0;
-             heading_to_steer = 0;
            }
     
         
@@ -176,19 +175,17 @@ RUDDER_MODE
                  Serial.print(" | counts: "); Serial.print(counts); Serial.println(" ; ");
           }
 
-          if(Steering_Mode == 0 || !sw1 || !sw2)  // sw1 and sw2 need to be on for automated steering
+        if(Steering_Mode == 0 && Steering)  
          {
             Steering = false;
             Rudder_Stop();
-           #if Clutch_Solenoid  == 1
-            Open_Solenoid();  // open solenoid to enable manual steering
-          #endif  
+            Solenoid(relay_Engage_solenoid, HIGH);   // open (set pin to high) solenoid to enable manual steering
          }
-        #if Clutch_Solenoid  == 1 
-        if(Steering_Mode != 0 && sw1 && sw2) Close_Solenoid();   // this closes solenoid to enable hydraulic steering, hardware dependent
-        #endif
-        
-       if(Steering_Mode == 1 || Steering_Mode == 2 || Steering_Mode ==3 || Steering_Mode == 5) Steering = true; // could use if Steering_Mode >0
+        if((Steering_Mode == 1 || Steering_Mode == 2 || Steering_Mode ==3 || Steering_Mode == 5 || Steering_Mode == 22) && !Steering)
+         {
+           Solenoid(relay_Engage_solenoid, LOW);   // close (set pin to low) solenoid to engage automatic steering  
+           Steering = true; // could use if Steering_Mode >0
+         } 
        // if(DODGE_MODE) Steering = false; //  if keypad LEFT or RIGHT RUDDER skip PID rudder control
             
         if(!DODGE_MODE) // do not steer if in dodge mode
@@ -218,7 +215,7 @@ RUDDER_MODE
       
   //------------------------  RUDDER POSITION  -----------------------
 
-  void RUDDER_POSITION()
+  float RUDDER_POSITION()
   {
      float rudder_position_max = 45;  // cfh 29.06.2019  org 45
      float rudder_position_min = -45; // cfh 29.06.2019 org -45
@@ -233,7 +230,7 @@ RUDDER_MODE
       Serial.print("Rudder = "); // use these print lines to get counts for calibration
       Serial.println(counts);
      }
-     // cfh 10.07.2019  This is the rudder position formula calculating the rudder position based on calibration setttings in encoder unita (counts) and the max/min rudder position values
+     // cfh 10.07.2019  This is the rudder position formula calculating the rudder position based on calibration setttings in encoder units (counts) and the max/min rudder position values
       if(counts >= counts_at_zero) // linear calibration from zero
       {
           rudder_position = rudder_position_max *(counts - counts_at_zero) / (counts_max - counts_at_zero);
@@ -247,8 +244,8 @@ RUDDER_MODE
     // rudder_position =map(rudder_position, 187,910,-45,45); 
      
     // Serial.print("Rudder: "); Serial.print(rudder_position);
-    
-  }  // END VOID RUDDER POSITION
+    return rudder_position;
+  }  // END float RUDDER POSITION
     
    /*  OLD RUDDER POSITION USING TIMING 
     float rudder_rate = .015; // deg/millisec
@@ -284,6 +281,14 @@ RUDDER_MODE
  
  //------------- RUDDER CONTROLS --------------------------------------------------
 #if Clutch_Solenoid  == 1
+ void Solenoid(int pin, int val)
+ {
+   digitalWrite(pin, val);
+   if(val == HIGH) digitalWrite(49,LOW);
+   if(val == LOW) digitalWrite(49,HIGH);
+   Serial.print("New Solenoid code "); Serial.print(Steering); Serial.print(" : "); Serial.println(val);
+ }
+ 
  void Open_Solenoid()
    {
      #if Motor_Controller != 4 
@@ -295,13 +300,9 @@ RUDDER_MODE
           Serial.print(Motor_0_fwd);Serial.print(", "); Serial.println(0);
        }
      #endif
-     #if Motor_Controller == 4
-        //Serial.println("Open solenoid Midtholm");
-        digitalWrite(relay_Engage_solenoid, HIGH); 
-     #endif
+
         
    }  // End Void Open Solenoid
- 
 
  void Close_Solenoid()
    {
@@ -313,11 +314,6 @@ RUDDER_MODE
           Serial.print(Motor_0_fwd);Serial.print(", "); Serial.println(127);
        }
      #endif
-     #if Motor_Controller == 4
-        //Serial.println("Close solenoid Midtholm");
-        digitalWrite(relay_Engage_solenoid, LOW); 
-     #endif
-     //digitalWrite(10, LOW);   // close solenoid to enable autopilot steering steering 
    }  // end void Close-Solenoid
 # endif
 
@@ -339,6 +335,9 @@ RUDDER_MODE
       //Serial.println("Stop Midtholm rudder");
       digitalWrite(relay_Turn_rudder_left, HIGH);
       digitalWrite(relay_Turn_rudder_right, HIGH); 
+      digitalWrite(51,LOW);
+      digitalWrite(53, LOW);
+      digitalWrite(49, HIGH);
    #endif
    // end cfh
   //  rudder_stop_time = millis();
@@ -368,6 +367,9 @@ RUDDER_MODE
         //Serial.println("Turn Midtholm left");
         digitalWrite(relay_Turn_rudder_right, HIGH); // always turn off right relay before engaging left
         digitalWrite(relay_Turn_rudder_left, LOW); 
+        digitalWrite(49,LOW);
+        digitalWrite(51,LOW);
+        digitalWrite(53, HIGH);
      #endif
      // end cfh
     if(Print_Motor_Commands)
@@ -402,6 +404,9 @@ RUDDER_MODE
         //Serial.println("Turn Midtholm right");
         digitalWrite(relay_Turn_rudder_left, HIGH); // always turn off left relay before engaging right
         digitalWrite(relay_Turn_rudder_right, LOW); 
+        digitalWrite(49, LOW);
+        digitalWrite(53,LOW);
+        digitalWrite(51, HIGH);
      #endif
      // end cfh
         rudder_on = true; //used in rudder position
@@ -502,21 +507,47 @@ void Actual_GPS_Steering() // modified 4/25/18 to use Garmin approach for course
   
 }// end actual gps steering
 #endif
-    
- /*************************************************************************************/   
+  
+/*************************************************************************************/   
  void Knob_Steering()
  {
    float Knob;
     Knob =   analogRead(2);
-    if (Knob > 600 || Knob < 400) {
+    if (Knob > 600 || Knob < 400) 
+    {
         rudder_command =  2*Maximum_Rudder*(float(Knob/1000)) - Maximum_Rudder ; // rudder command +/- Maximum_Rudder using 10Kohm values ranging from 0 to 1000
+       // IBT-2 motorcontroller 19.04.2021
+      int motorspeedValue = analogRead(MOTORSPEED_PIN);
+      motorspeed = motorspeedValue;     
+      // sensor value is in the range 0 to 1023
+      // the lower half of it we use for reverse rotation; the upper half for forward rotation
+      if (motorspeedValue < 512)
+      {
+        // reverse rotation
+        int reversePWM = -(motorspeedValue - 511) / 2;
+        if (reversePWM < 3) reversePWM = 0;
+        analogWrite(LPWM_Output, 0);
+        analogWrite(RPWM_Output, reversePWM);
+        Serial.println(reversePWM);
       }
-    else {
+      else
+      {
+        // forward rotation
+        int forwardPWM = (motorspeedValue - 512) / 2;
+        if (forwardPWM < 3) forwardPWM = 0;
+        analogWrite(RPWM_Output, 0);
+        analogWrite(LPWM_Output, forwardPWM);
+        Serial.println(forwardPWM);
+      }
+   
+    }
+    else 
+    {
         rudder_command = 0;
-      }
+        analogWrite(LPWM_Output, 0);
+         analogWrite(RPWM_Output, 0);
+    }
  
-   // Serial.print("Knob: "); Serial.print(Knob); 
-   // Serial.print("  CMD: "); Serial.print(rudder_command);  
    
    /*
    motorspeed = 255/40*(rudder_command); // + = right, - = left
@@ -525,7 +556,7 @@ void Actual_GPS_Steering() // modified 4/25/18 to use Garmin approach for course
    if ( motorspeed < -1023) motorspeed = -255;
    motorspeed= abs(motorspeed);
   */
-   
+  
  } // end void knob steering
  
  

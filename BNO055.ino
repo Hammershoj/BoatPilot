@@ -224,7 +224,8 @@ void BNO_RestoreCal()
     if (bnoID != sensor.sensor_id)
     {
        // Serial.println("\nNo Calibration Data for this sensor exists in EEPROM");
-       lcd.print("NO BNO CAL DATA");
+       lcd.setCursor(0,0);
+       lcd.print("No Comp calib data");
        lcd.setCursor(0,1); lcd.print("DO MANUAL CAL");
         delay(2000);
     }
@@ -238,18 +239,16 @@ void BNO_RestoreCal()
 
         //Serial.println("\n\nRestoring Calibration data to the BNO055...");
         lcd.setCursor(0,0);
-        lcd.print ("LOADING BNO DATA");
+        lcd.print ("Loading comp cal     ");
+        Serial.print("Cal data:"); displaySensorOffsets(calibrationData);
         bno.setSensorOffsets(calibrationData);
-
+        delay(1000);
         //Serial.println("\n\nCalibration data loaded into BNO055");
-        lcd.setCursor(0,1);
-        lcd.print("BNO CAL DATA LOADED");
+        lcd.setCursor(0,0);
+        lcd.print("Comp cal data loaded");
         foundCalib = true;
         Serial.print("Calibration data loaded for sensor type: ");
         Serial.println(sensor.type);
-        delay(2000);
-        lcd.setCursor(0,0);
-        lcd.print("                    ");
     }
 //  get and restore BNO calibration
 
