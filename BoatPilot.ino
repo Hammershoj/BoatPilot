@@ -56,7 +56,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 int RUDDER_MODE = 0; // 0 uses rudder position, 1 does not   // cfh 15.06.2019 changed to variable and not predefined const
 boolean Change_rudder_mode = false;  // cfh 15.06.2019 added to allow for user input to change RUDDER_MODE
 #define RF24_Attached 0 // 0 if RF 24 radio modules are not attached, 1 if they are used
-#define Wind_Input 0 // 1 to use NMEA wind data. 0 to not use wind data
+#define Wind_Input 1 // 1 to use NMEA wind data. 0 to not use wind data
 
 #define RUDDER_OFFSET 1 // 1 uses rudder offset, 0 does not
 #define BEARINGRATE_OFFSET 1 // 1 to use 0 to not use
@@ -129,7 +129,7 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
  boolean Print_UTC = 0;
  boolean print_Nav_Data = 0; // Print_1 Tab
  boolean Print_Motor_Commands = 1;  // prints rudder commands in PID tab
- boolean Print_Rudder_Commands = 0;  // prints rudder commands in PID tab
+ boolean Print_Rudder_Commands = 1;  // prints rudder commands in PID tab
  boolean Print_Anticpate_Turn = 0;  // prints data from void Actual_GPS_Steering to evaluate Anticipate turn function
  int print_level=print_level_max;
 //  print modes for MinIMU9
@@ -562,20 +562,21 @@ Serial_GPS.begin(9600);
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
-
-  // Show initial display buffer contents on the screen --
-  // the library initializes this with an Adafruit splash screen.
-  display.display();
-  delay(2000); // Pause for 2 seconds
-  // Clear the buffer
-  display.clearDisplay();
-  display.setTextSize(1);      // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE); // Draw white text
-  display.setCursor(0, 0);     // Start at top-left corner
-  display.cp437(true);         // Use full 256 char 'Code Page 437' font
-  display.write("BNO055 detected");
-  display.display();
-  delay(500);  
+  else {
+    // Show initial display buffer contents on the screen --
+    // the library initializes this with an Adafruit splash screen.
+    display.display();
+    delay(2000); // Pause for 2 seconds
+    // Clear the buffer
+    display.clearDisplay();
+    display.setTextSize(1);      // Normal 1:1 pixel scale
+    display.setTextColor(SSD1306_WHITE); // Draw white text
+    display.setCursor(0, 0);     // Start at top-left corner
+    display.cp437(true);         // Use full 256 char 'Code Page 437' font
+    display.print("BNO055 detected");
+    display.display();
+    delay(500);  
+  }
   // Clear LCD start up info
   lcd.setCursor(0,0);
   lcd.print("                    ");

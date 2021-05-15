@@ -89,8 +89,8 @@ RUDDER_MODE
           #endif
           
           #if PID_MODE == 1   
-           PID_output = PID_Ks[0] * (PID_Ks[1] * heading_error  - PID_Ks[2] * differential_error); 
-           rudder_command = rudder_command + PID_output + Rudder_Offset;  // this is a form of integral control was used summer of 2012 with estimated rudder position
+            PID_output = PID_Ks[0] * (PID_Ks[1] * heading_error  - PID_Ks[2] * differential_error); 
+            rudder_command = rudder_command + PID_output + Rudder_Offset;  // this is a form of integral control was used summer of 2012 with estimated rudder position
           #endif
           
           #if PID_MODE == 3
@@ -205,7 +205,7 @@ RUDDER_MODE
                
             if(rudder_error < - deadband)
                {
-                 Left_Rudder();
+                  ();
                }  
           } // end  if Steering
 
@@ -225,11 +225,6 @@ RUDDER_MODE
 
      
      counts = analogRead(4);
-     if(Print_Rudder_Commands) 
-     {
-      Serial.print("Rudder = "); // use these print lines to get counts for calibration
-      Serial.println(counts);
-     }
      // cfh 10.07.2019  This is the rudder position formula calculating the rudder position based on calibration setttings in encoder units (counts) and the max/min rudder position values
       if(counts >= counts_at_zero) // linear calibration from zero
       {

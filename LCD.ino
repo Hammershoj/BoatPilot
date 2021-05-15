@@ -21,7 +21,7 @@ void LCD(){
      lcd.print(Bearing_to_destination,1); 
      
      lcd.setCursor(0, 1);
-     lcd.print("HDG        ");
+     lcd.print("HDG       ");
      lcd.setCursor(4, 1);
      lcd.print(heading,1);
 
