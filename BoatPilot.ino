@@ -1,4 +1,3 @@
-
 /*****************************************************************************
 TERMS AND CONDITIONS
 
@@ -17,29 +16,20 @@ THIS AUTOPILOT SOFTWARE AND ASSOCIATED HARDWARE DESCRIPTIONS IS MADE AVAILABE UN
 COMMONS LICENSING
 
 *****************************************************************************************************************************/
-/*
- * Code Version 2.6 works in all modes on the Mega. On the Teensy the Teensy TFT is working, the TFT keypad is working and the 
- * compass is working.   Buttons are working.  The GPS read is not working
- */
- #define Arduino 0
- #define Board Arduino
 
-  #include <Keypad.h>
-  #include <LiquidCrystal.h>
-  #include <Wire.h>
-  // cfh 15.06.2019
-  #include <SoftwareSerial.h>
-  #include <EEPROM.h>
+#include <Keypad.h>
+#include <LiquidCrystal.h>
+#include <Wire.h>
+#include <SoftwareSerial.h>
+#include <EEPROM.h>
 
-// OLED +compass
 #include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#include <Adafruit_GFX.h>      // Graphics library used with OLED
+#include <Adafruit_SSD1306.h>  // OLED
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -101,9 +91,6 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
  boolean Use_CTS = 0  ;// 0 no, 1 yes;  if the GPS generates a GPS course to steer and you want to use it instead of calculating course to steer from BOD and XTE                            
  //float bearingrate_correction = 0.0; //use to get avg stationary bearing rate to read 0 on screen 2
 
- #if Board == Arduino
-  #define LCD_Contrast 0  // 0 to 255 over 128 not recommended This replaces the 10k pot for V0 contrast control input
- #endif
  #define SW2_Used 0 // 0 if SW not used. 1 if SW2 used, must be 1 to use SW2 on wired remote
  #define UseBarometer 0 // 1 to use, 0 to not use, this works with Pololu Alt IMU-10 v3 and v5 Prints barometric pressure and temperature on screen 4, measured at the compass 
  #define Wind_Steer_Direct 0 /* 0 should be used for default which uses wind-error or GPS_error to compute heading_error but then all steering is based on compass steering.
@@ -128,8 +115,8 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
  boolean Print_PID = 0; // 
  boolean Print_UTC = 0;
  boolean print_Nav_Data = 0; // Print_1 Tab
- boolean Print_Motor_Commands = 1;  // prints rudder commands in PID tab
- boolean Print_Rudder_Commands = 1;  // prints rudder commands in PID tab
+ boolean Print_Motor_Commands = 0;  // prints rudder commands in PID tab
+ boolean Print_Rudder_Commands = 0;  // prints rudder commands in PID tab
  boolean Print_Anticpate_Turn = 0;  // prints data from void Actual_GPS_Steering to evaluate Anticipate turn function
  int print_level=print_level_max;
 //  print modes for MinIMU9
@@ -353,7 +340,10 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 char key = 0;
 boolean toggle = false;
 
-//const int motorspeed = 32; // 0 t0 127  // use with pololu motor controller
+// MOTOR / RUDDER CONTROL SETUP PARAMETERS 
+#define Serial_MotorControl Serial2
+ 
+ //const int motorspeed = 32; // 0 t0 127  // use with pololu motor controller
 
  //Servo myservo;  // used to operate a servo to simulate the rudder
  float Magnetic_Variation; 
@@ -444,8 +434,10 @@ boolean toggle = false;
 // end cfh
 
 #if Wind_Input == 1
- #include <SoftwareSerial.h>
- SoftwareSerial SoftSerial1 =  SoftwareSerial(11, 12); // RX, TX 
+  #define SoftSerial1 Serial2 
+  static const uint32_t NMEABaud = 9600; // cfh 15.06.2019 
+ //#include <SoftwareSerial.h>
+ //SoftwareSerial SoftSerial1 =  SoftwareSerial(17, 16); // RX, TX 
  int SoftSerial1_Bytes;
  byte byteWind;
  int count_b;
@@ -484,18 +476,17 @@ float yaw;
  //*******  SETUP    SETUP   SETUP   ***** 
 
 void setup() {
+  //delay(1000); // give chip some warmup on powering up
+  
+  // **** Initialize serial communication and set baud rate ****************/
+  Serial.begin(9600); // Serial conection to Serial Monitor
+  //Serial1.begin(57600); //Communication to Serial Remote
+  Serial_GPS.begin(9600);
+  Serial_MotorControl.begin(19200); //Serial output for the Pololu Motor Controller 
  
-delay(1000); // give chip some warmup on powering up
-Serial.begin(9600); // Serial conection to Serial Monitor
-//Serial1.begin(57600); //Communication to Serial Remote
-
-Serial.println("Setup started and Serial Opened");
-Serial_GPS.begin(9600);
-
-#if Board == Arduino
-   pinMode(48, INPUT); //SW1
-   pinMode(46, INPUT); //SW2
-   // cfh 09.06.2019 added changed motor controller using relays
+  pinMode(48, INPUT); //SW1
+  pinMode(46, INPUT); //SW2
+  // cfh 09.06.2019 added changed motor controller using relays
   pinMode(relay_Turn_rudder_left, OUTPUT);
   pinMode(relay_Turn_rudder_right, OUTPUT);
   pinMode(relay_Engage_solenoid, OUTPUT);
@@ -511,22 +502,21 @@ Serial_GPS.begin(9600);
   //  Serial.print("rudder mode: "); Serial.println(Stored_rudder_mode);
   //#endif
   // end cfh add
-  #define Serial_MotorControl Serial2
+
   
   // IBT-2 motorcontroller setup 20.04.2021
   pinMode(RPWM_Output, OUTPUT);
   pinMode(LPWM_Output, OUTPUT);
-    
-#endif
-
- Serial_MotorControl.begin(19200); //Serial output for the Pololu Motor Controller 
- delay( 1000);
- 
+     
  #if Wind_Input == 1
-  #if Board == Arduino // can't use pin 11 on Teensy Pin 11 is part of TFT pins need to get different pin for Teensy wind input
-   pinMode(11,INPUT);
-   SoftSerial1.begin(4800);
-  #endif
+   pinMode(16,INPUT);
+   SoftSerial1.begin(9600);
+   if (SoftSerial1.available()) {
+     Serial.print("Wind: "); Serial.println(INPUT);
+   }
+   else {
+     Serial.println("No NMEA serial connection available ");
+   }
  #endif
   //lcd.begin(20,4); // regular LCD
   lcd.begin(); // for LCD_I2C
@@ -618,3 +608,11 @@ void loop()
      lcd.print("to Accept           ");
      delay (100);
    }  // end accept terms and conditions
+
+/********************************************/
+/* NMEA parser                              */
+/********************************************/
+void ParseNMEA()
+{
+  
+}

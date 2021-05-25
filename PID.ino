@@ -205,7 +205,7 @@ RUDDER_MODE
                
             if(rudder_error < - deadband)
                {
-                  ();
+                  Left_Rudder();
                }  
           } // end  if Steering
 

@@ -5,9 +5,22 @@ void Init_Compass()
       {
         lcd.setCursor(0,0);
         lcd.print(" No BNO055 detected");
-        Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-        while(1);
-      }
+        Serial.println("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+        if (SoftSerial1.available() > 0) 
+          {
+            lcd.setCursor(0,1);
+            lcd.print(" Using NMEA input ");
+            Serial.println("Using NMEA compass input instead");
+          }
+        else 
+          {
+            lcd.setCursor(0,1);
+            lcd.print(" No NMEA connected");
+            lcd.setCursor(0,2);
+            lcd.print("Not able to run AutoPilot");
+            while(1);
+          }
+        }
     else
       {  
         //  Get and restore BNO Calibration offsets   
