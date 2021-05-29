@@ -57,9 +57,9 @@ void keypadEvent(KeypadEvent key){
 void KeyPressed(char keyin)
 {  
      Serial.print("keyin = "); Serial.println(keyin);
-     Serial.print("screen = "); Serial.println(Screen);
-     switch (keyin){
+        switch (keyin){
         case '0': 
+          lcd.clear();
           Key0_Pressed();
         break; // end case 0
    
@@ -84,7 +84,6 @@ void KeyPressed(char keyin)
         #if GPS_Used == 1
           if(!GPS_Available) break;
            Steering_Mode = 2;
-            Steering = true;
             Mode = "GPS";   
             UTC_timer_old = millis();
             Date_Time();
@@ -131,7 +130,6 @@ void KeyPressed(char keyin)
                #endif  
             }
             Steering_Mode = 3;
-            Steering = true;
             Mode = "TACK";    
             } // end if toggle is true
           
@@ -143,14 +141,8 @@ void KeyPressed(char keyin)
               {
                 Steering_Mode = 4;
                 wind_to_steer = Wind_Dir ;
-                Steering = true;
                 Mode = "WIND";
               } //end if not toggle
-            
-          lcd.setCursor(0,3);
-          lcd.print("          ");
-          lcd.setCursor(0,3);
-          lcd.print(Mode);
         break; 
          
         case '*':   //Rudder on Dodge Left
@@ -193,8 +185,6 @@ void KeyPressed(char keyin)
            if(Steering_Mode !=4){   
              if (heading_to_steer < 0) heading_to_steer = heading_to_steer +360;
              if (heading_to_steer > 360) heading_to_steer = heading_to_steer -360; 
-             lcd.setCursor(15, 1);
-             lcd.print(heading_to_steer,1);
            }  // end if steering mode != 4     
             
  #if Wind_Input == 1
@@ -218,7 +208,7 @@ void KeyPressed(char keyin)
              
              if(Steering_Mode != 1 && Steering_Mode != 3 && Steering_Mode != 22 && Steering_Mode !=4)
              {
-                lcd.begin();
+                //lcd.begin();
                 lcd.setCursor(6,2);
                 lcd.print("WRONG MODE");  // this would be a good place to put a audible alarm beep
                // delay(250);
@@ -230,12 +220,7 @@ void KeyPressed(char keyin)
           if(Screen !=4)
           { 
             Steering_Mode = 5;
-            Steering = true;
             Mode = "KNOB";     
-            lcd.setCursor(0,3);
-            lcd.print("          ");
-            lcd.setCursor(0,3);
-            lcd.print(Mode);
           }
         #if Compass == 1 
           if(Screen == 4)
@@ -258,10 +243,8 @@ void KeyPressed(char keyin)
             {
               if (heading_to_steer < 0) heading_to_steer = heading_to_steer +360;
               if (heading_to_steer > 360) heading_to_steer = heading_to_steer -360; 
-              lcd.setCursor(15, 1);
-              lcd.print(heading_to_steer,1);
             }
- #if Wind_Input == 1            
+            #if Wind_Input == 1            
             if(Steering_Mode == 4){
               wind_to_steer = wind_to_steer - 10; // opposite HTS
               if (wind_to_steer < 0) wind_to_steer = wind_to_steer +360; 
@@ -269,7 +252,7 @@ void KeyPressed(char keyin)
               lcd.setCursor(15, 1);
               lcd.print(wind_to_steer,1);
             }
-#endif               
+            #endif               
             if (Steering_Mode == 22)
              {
                CTS_GPS2 = CTS_GPS2 + 10;
@@ -281,7 +264,7 @@ void KeyPressed(char keyin)
              
              if(Steering_Mode != 1 && Steering_Mode != 3 && Steering_Mode != 22 && Steering_Mode !=4)
              {
-                lcd.begin();
+                //lcd.begin();
                 lcd.setCursor(6,2);
                 lcd.print("WRONG MODE");  // this would be a good place to put a audible alarm beep
                 delay(250);
@@ -295,8 +278,6 @@ void KeyPressed(char keyin)
                 heading_to_steer = heading_to_steer -1;
                 if (heading_to_steer < 0) heading_to_steer = heading_to_steer +360;
                 if (heading_to_steer > 360) heading_to_steer = heading_to_steer -360;
-                lcd.setCursor(15, 1);
-                lcd.print(heading_to_steer,1);
              }
                #if Wind_Input == 1             
                           if(Steering_Mode == 4){             
@@ -318,7 +299,7 @@ void KeyPressed(char keyin)
              
              if(Steering_Mode != 1 && Steering_Mode != 3 && Steering_Mode != 22 && Steering_Mode != 4)
              {
-               lcd.begin();
+               //lcd.begin();
                 lcd.setCursor(6,2);
                 lcd.print("WRONG MODE");
                 delay(250);
@@ -333,11 +314,11 @@ void KeyPressed(char keyin)
              #if Compass == 0
              if( Screen > 5) Screen = 0;  // cfh 15.06.2019 changed from 4 to five to include calibration screen
              #endif
+             Serial.print("screen = "); Serial.println(Screen);
             // cfh
-
             //
-             lcd.clear();
-             LCD();
+            lcd.clear();
+            LCD();
          break;
             
         case '9': 
@@ -346,8 +327,6 @@ void KeyPressed(char keyin)
                 heading_to_steer = heading_to_steer +1;
                 if (heading_to_steer < 0) heading_to_steer = heading_to_steer +360;
                 if (heading_to_steer > 360) heading_to_steer = heading_to_steer -360;
-                lcd.setCursor(15, 1);
-                lcd.print(heading_to_steer,1);
              }
  #if Wind_Input == 1
            if(Steering_Mode == 4){
@@ -369,7 +348,7 @@ void KeyPressed(char keyin)
              
              if(Steering_Mode != 1 && Steering_Mode != 3 && Steering_Mode != 22 & Steering_Mode !=4)
              {
-               lcd.begin();
+               //lcd.begin();
                lcd.setCursor(6,2);
                lcd.print("WRONG MODE");
                delay(250);
@@ -425,41 +404,29 @@ void KeyHeld(char keyin){
 
         void Key0_Pressed()
         {
-          #if Clutch_Solenoid  == 1
-           Open_Solenoid();
-          #endif
           Steering_Mode = 0;
           Mode = "OFF";
-          Steering = false;
           GPS_Was_Available = false;
           Accept_Terms = 0;  // this quits printing the Terms and conditions on start up
           Screen = 0;  
           toggle = false; // resets key 3 to tack mode instead of wind mode
-        #if Board == Teensy
-          lcd.init();          
-        #endif
+          analogWrite(LPWM_Output, 0);
+          analogWrite(RPWM_Output, 0);
+          
         #if Board == Arduino
-          lcd.begin();
+          //lcd.begin();
         #endif
         #if BEARINGRATE_OFFSET == 1
           bearingrate_Offset = 0; // bearingrate_Offset applied in Tab Subs void Bearing_Rate()
                                   // set with keys 1, 2, 3 maybe 22 reset to 0 in key zero
         #endif  
           LCD();
-         // lcd.setCursor(0,3);
-         // lcd.print("          ");
-          lcd.setCursor(0,3);
-          lcd.print(Mode);  
         }  // end Key0 pressed
 
 /*******************************************************/
 void Key1_Pressed()
 {
-          #if Clutch_Solenoid  == 1  // cfh 09.06.2019
-           Close_Solenoid();
-          #endif
           Steering_Mode = 1;
-          Steering = true;
           Mode = "COMP";
           heading_to_steer = heading;
           integral_error = 0; // reset integral error
@@ -475,22 +442,12 @@ void Key1_Pressed()
              bearingrate_Offset = - bearingrate; // bearingrate_Offset applied in Tab Subs void Bearing_Rate()
                                       // set with keys 1, 2, 3 maybe 22 reset to 0 in key zero
            #endif  
-            
-          lcd.setCursor(0,3);
-          lcd.print("          ");
-          lcd.setCursor(0,3);
-          lcd.print(Mode);
-          lcd.setCursor(15, 1);
-          lcd.print(heading_to_steer,1);
+     
 }  // end key1 pressed
 
 void Key2_Pressed(){
   #if GPS_Used
-          #if Clutch_Solenoid  == 1  // cfh 09.06.2019
-           Close_Solenoid();
-          #endif
           Steering_Mode = 2;
-          Steering = true;
           Mode = "GPS";   
           UTC_timer_old = millis();
           Date_Time();
@@ -503,10 +460,6 @@ void Key2_Pressed(){
              bearingrate_Offset = - bearingrate; // bearingrate_Offset applied in Tab Subs void Bearing_Rate()
                                       // set with keys 1, 2, 3 maybe 22 reset to 0 in key zero
           #endif  
-          lcd.setCursor(0,3);
-          lcd.print("          ");
-          lcd.setCursor(0,3);
-          lcd.print(Mode); 
  #endif
 }  // end Key2 pressed
 
@@ -537,7 +490,6 @@ void GPS2_mode()
           //Mode = "NA"; // temporarily disabled
           
           Steering_Mode = 22;
-          Steering = true;
           Mode = "GPS2"; 
           CTS_GPS2 = course; // captures current course as the course to steer and will steer this instead of going to waypoint  
           UTC_timer_old = millis();
