@@ -29,7 +29,8 @@ void GET_sentence() {
       }
     }
     else {
-      //Serial.println("No GPS data...");
+      if (print_NEMA) Serial.println("No GPS data...");
+      return;
     }
 }     
 

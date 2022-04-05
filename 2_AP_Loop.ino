@@ -17,6 +17,7 @@
       get_Wind();
     }
     #endif
+    
     if((millis()-timer)>=20)  // Main loop runs at 50Hz
     {
       counter++;
@@ -32,6 +33,9 @@
           //Serial.println(timer);
           #if Compass == 1
             BNO055();  // Read compass data from Bosch BNO055 sensor
+          #endif
+          #if Compass == 2
+            BNO08x();
           #endif
           #if Wind_Input ==1
               if(SoftSerial1.available() >25){

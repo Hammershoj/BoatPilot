@@ -26,7 +26,9 @@ RUDDER_MODE
             Rudder_Stop();
             //Key0_Pressed();   // turning off rudder to avoid damage !
          }
-          
+         
+         //readRudderEncoder(); // 2.06.21 added to use new developed rotary encoder/chain tensioner
+
         if(!DODGE_MODE)
         { 
           // if keypad "1" was pushed Steering_Mode = 1 (compass steer) and heading_to_steer was set to the then current heading  
@@ -223,8 +225,8 @@ RUDDER_MODE
      //float counts_at_zero = 440;
      //float counts_min = 64;
 
-     
-     counts = analogRead(4);
+     //counts = analogRead(4); Use this if you are using resistor for rudder position
+     counts = readRudderEncoder();  //03.06.21 using rotary encoder for rudder position
      // cfh 10.07.2019  This is the rudder position formula calculating the rudder position based on calibration setttings in encoder units (counts) and the max/min rudder position values
       if(counts >= counts_at_zero) // linear calibration from zero
       {
@@ -555,9 +557,29 @@ void Actual_GPS_Steering() // modified 4/25/18 to use Garmin approach for course
  } // end void knob steering
  
  
+   void timerIsr() {
+  rudder_encoder->service();
+}
+ 
+ float readRudderEncoder()
+{
+  rudder_encoder_value += rudder_encoder->getValue();
+  //Serial.print("Reading encoder: "); Serial.println(rudder_encoder_value);
+  if (rudder_encoder_value/2 > last_rudder_encoder_value) {
+    last_rudder_encoder_value = rudder_encoder_value/2;
+    rudder_right = true;
+    delay(150);
+  }else   if (rudder_encoder_value/2 < last_rudder_encoder_value) {
+    last_rudder_encoder_value = rudder_encoder_value/2;
+    rudder_left = true;
+    delay(150);
+  }
+  return rudder_encoder_value;
+}
+
  
  /*************************************************************************************/
- /*
+
      void Tracking_Error()
   {
     /*  tracking error is difference between course over ground and compass heading.
@@ -567,9 +589,7 @@ void Actual_GPS_Steering() // modified 4/25/18 to use Garmin approach for course
         filtered to provide a time averaged result that will not change abruptly wwhen going to a new course
         but recompute on a new course.
      */
-     
 
-/*  
            float tracking_error_LPF = .999; // tracking error updates when GPS updates about  once per second
            if(GPRMC_fix && SOG > 1)// only updates if valid fix  may want to add a lower speed limit
            {
@@ -585,5 +605,5 @@ void Actual_GPS_Steering() // modified 4/25/18 to use Garmin approach for course
            } // end if
          } // end Tracking_Error
    
- */ 
+ 
 /********************************************************************************/

@@ -27,6 +27,9 @@ COMMONS LICENSING
 #include <Adafruit_GFX.h>      // Graphics library used with OLED
 #include <Adafruit_SSD1306.h>  // OLED
 
+#include <ClickEncoder.h>
+#include <TimerOne.h>
+
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -35,7 +38,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 /******       USER INPUT       ********/
 
-#define Compass 1 //  0 for Pololu, 1 for BNO055
+#define Compass 1 //  0 for Pololu, 1 for BNO055, 2 for BNO080
 #define IMU 52 // Used to select Pololu IMUs Versions and calibration set. 
     //Allowed values: 2 IMU9 V2; 93 (jacksIMU9V3); 103 (jacks IMU10V3; 51 (Jacks IMU9V5 #1); 52 (Jacks IMU9 V5 #2)
     //determines which set of calibration data is used these extra versions were added to code 7/11/17 J14.4
@@ -57,8 +60,8 @@ boolean Change_rudder_mode = false;  // cfh 15.06.2019 added to allow for user i
  boolean Accept_Terms = 0; //  1 user must accept terms to run.  0 user accepts terms by setting this value to 0
  boolean just_started = 0; // to do a second setup so get a better gyro startup
 // cfh 09.07.19 uncommented
-//float Kxte[3] = {0, 0, 0}; // used for XTE PID, use this to zero out XTE tracking
-float Kxte[3] = {.2, 0, 0}; // {.2, 4, .0004} baseline; {.05, .5, .0005}last used;  0 is proportional, 1 is differential, 2 is integral error, see GPS_Steer() in PID
+ //float Kxte[3] = {0, 0, 0}; // used for XTE PID, use this to zero out XTE tracking
+ float Kxte[3] = {.2, 0, 0}; // {.2, 4, .0004} baseline; {.05, .5, .0005}last used;  0 is proportional, 1 is differential, 2 is integral error, see GPS_Steer() in PID
                         // .36 will give 45 deg correction at 120 ft XTE to emulate my Garmin GPSMAP 740s see PID tab, voidActual_Gps_Steering()
  float K_course_avg = .999; //used to smooth gps course in PID/ void Actual_GPS_Steering().999 will smooth over 1000 points
  
@@ -66,15 +69,23 @@ float Kxte[3] = {.2, 0, 0}; // {.2, 4, .0004} baseline; {.05, .5, .0005}last use
   
  float Maximum_Rudder = 18; // Maximum rudder angle in degrees
 // set rudder variables as global
-     float counts_at_zero = 500;
-     float counts_min = counts_at_zero -400;  //Right
-     float counts_max = counts_at_zero +400;  // Left   from calibration in print statement
-     float counts;
+ float counts_at_zero = 0;
+ float counts_min = counts_at_zero -100;  //Right
+ float counts_max = counts_at_zero +100;  // Left   from calibration in print statement
+ float counts;
+ // rotary encoder direction
+ boolean rudder_right = false;
+ boolean rudder_left = false;
+ //boolean middle = false;
+
+ClickEncoder *rudder_encoder;
+int16_t last_rudder_encoder_value, rudder_encoder_value;
+
 //----------------------------------------------- Connection pins for motor and solenoid steering on Midtholm Maxi 120
 // cfh 09.06.2019 defined motor control output pins added
-int relay_Turn_rudder_left = 9;  // pin 12 open relay engaging motor to the left
-int relay_Turn_rudder_right = 8; // pin 11 open relay engaging motor to the right
-int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging gear
+int relay_Turn_rudder_left = 10;  // pin 9 or pin 12 open relay engaging motor to the left
+int relay_Turn_rudder_right = 9; // pin 8 or pin 11 open relay engaging motor to the right
+int relay_Engage_solenoid = 8; // pin 10 or pin 10 open relay engaginng solenoid engaging gear
  // end cfh
  
  // User set motorspeedMIN around lines 359, 360, 371 for your controller type and rudder steering motor Use crtl-F to find motorspeedMIN 
@@ -83,7 +94,7 @@ int relay_Engage_solenoid = 10; // pin 10 open relay engaginng solenoid engaging
  float Tack_rudder_speed = .5; // rudder speed during tack , value * full speed, will use min of tack speed and regular speed, user adjust
  float Rudder_Offset = 0; // see notes 10.21.16
  float bearingrate_Offset = 0;
- float MagVar_default = 2.5;// 2.5 Avg west coast DK  User should keep up to date for location.  Pgm will use GPS value if available + east, - west
+ float MagVar_default = 0.5;// 2.5 Avg west coast NO STVG  User should keep up to date for location.  Pgm will use GPS value if available + east, - west
 
  boolean Serial_Remote_Is_Connected = 0  ; // 1 remote connected, 0 remote not connected Pgm hangs up if remote data is sent and remote is not connected
  boolean GPS_Auto_Steer = 1; // 0 will cause GPS steering to go to compass mode and maintain heading if waypoint reached. 
@@ -254,6 +265,7 @@ float Avg_course;
 float CTS_GPS2;
 float GPS_course_to_steer;
 float course_error;
+float tracking_error;
 float AVG_tracking_error;
 float XTE_integral_error;
 float XTE_course_correction;
@@ -293,23 +305,54 @@ double Waypoint_Bearing_From[20]; // beraing from previous waypoint to this wayp
 float MagVar; //Magnetic Variation E is plus, W is minus 
   
 //******  COMPASS  ***************
+
+boolean compass_connected = true;
 #if Compass == 0
  #include <L3G.h>  // get library from Pololu http://www.pololu.com/product/1268
  #include <LSM303.h>  // get library from Pololu, use version that corresponds to your version of the IMU
+ compass_connected = false;
 #endif
 
-#if Compass == 1
+#if Compass == 1  // BNO055 compass
  #include <Adafruit_Sensor.h>
  #include <Adafruit_BNO055.h>
  #include <utility/imumaths.h>
-
-  Adafruit_BNO055 bno = Adafruit_BNO055(55);
+ Adafruit_BNO055 bno055 = Adafruit_BNO055(55);
  #define BNO055_SAMPLERATE_DELAY_MS (100)
   int eeAddress = 0;
   long bnoID;
   bool foundCalib = false;
   bool DataStored = false;
 #endif
+
+#if Compass ==2  // BNO08x compass using BNO08x.ino file
+/*
+  Using the BNO080 IMU
+  By: Nathan Seidle
+  SparkFun Electronics
+  Date: December 21st, 2017
+  SparkFun code, firmware, and software is released under the MIT License.
+	Please see LICENSE.md for further details.
+
+  Feel like supporting our work? Buy a board from SparkFun!
+  https://www.sparkfun.com/products/14586
+
+  This example shows how to output the parts of the magnetometer.
+
+  It takes about 1ms at 400kHz I2C to read a record from the sensor, but we are polling the sensor continually
+  between updates from the sensor. Use the interrupt pin on the BNO080 breakout to avoid polling.
+
+  Hardware Connections:
+  Attach the Qwiic Shield to your Arduino/Photon/ESP32 or other
+  Plug the sensor onto the shield
+  Serial.print it out at 115200 baud to serial monitor.
+*/
+#include <Wire.h>
+#include "SparkFun_BNO080_Arduino_Library.h" // Click here to get the library: http://librarymanager/All#SparkFun_BNO080
+BNO080 bno08x;
+
+#endif
+
 int bnoCAL_status =0;  //used to send 4 digit cal status to RF remotes
 
 #if UseBarometer
@@ -432,10 +475,10 @@ boolean toggle = false;
    int LPWM_Output = 6; // Arduino PWM output pin 6; connect to IBT-2 pin 2 (LPWM)
  #endif
 // end cfh
-
+#define SoftSerial1 Serial2 
 #if Wind_Input == 1
-  #define SoftSerial1 Serial2 
-  static const uint32_t NMEABaud = 9600; // cfh 15.06.2019 
+  //#define SoftSerial1 Serial2 
+  static const uint32_t NMEABaud = 4800; // cfh 15.06.2019 
  //#include <SoftwareSerial.h>
  //SoftwareSerial SoftSerial1 =  SoftwareSerial(17, 16); // RX, TX 
  int SoftSerial1_Bytes;
@@ -455,7 +498,7 @@ boolean toggle = false;
  float Wind_MAX;
  float Depth = 0;
  
-/***********  COMPASS  SET UP  **************************************/
+/***********  COMPASS paramters SET UP  **************************************/
 float heading;
 float heading_to_steer=0; //  see PID
 float MAG_Heading_Degrees; //LCD_compass tab
@@ -502,7 +545,15 @@ void setup() {
   //  Serial.print("rudder mode: "); Serial.println(Stored_rudder_mode);
   //#endif
   // end cfh add
-
+  // rudder rotary encoder init
+  
+  rudder_encoder = new ClickEncoder(A3, A4, A5);
+  rudder_encoder->setAccelerationEnabled(false);
+   
+  Timer1.initialize(1000);
+  Timer1.attachInterrupt(timerIsr); 
+  
+  last_rudder_encoder_value = rudder_encoder->getValue();
   
   // IBT-2 motorcontroller setup 20.04.2021
   pinMode(RPWM_Output, OUTPUT);
@@ -510,7 +561,7 @@ void setup() {
      
  #if Wind_Input == 1
    pinMode(16,INPUT);
-   SoftSerial1.begin(9600);
+   SoftSerial1.begin(NMEABaud);
    if (SoftSerial1.available()) {
      Serial.print("Wind: "); Serial.println(INPUT);
    }
@@ -538,9 +589,10 @@ void setup() {
   }
   if(Motor_Controller == 4) Serial_MotorControl.write(170); // cfh 09.06.2019 added, but not in use
  
-  #if Compass == 1
+  #if Compass > 1
     Init_Compass();
   #endif  // Compass == 1
+
 
   #if UseBarometer
   Init_Barometer();

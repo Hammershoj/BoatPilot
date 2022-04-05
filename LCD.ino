@@ -29,12 +29,12 @@ void LCD(){
      lcd.print("COG       ");
      lcd.setCursor(4,2);
      if(GPRMC_fix){lcd.print(course,1);}
-     else{ lcd.print(".....");}  
+     else{ lcd.print("....");}  
      lcd.setCursor(10, 2);   
      lcd.print("SOG       ");
      lcd.setCursor(14, 2);
      if(GPRMC_fix){lcd.print(SOG,1);}
-     else{ lcd.print(".....");}  
+     else{ lcd.print("....");}  
               
      lcd.setCursor(0,3);
      lcd.print("          ");

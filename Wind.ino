@@ -35,7 +35,7 @@ if (SoftSerial1.available() > 0){
          Windheader = Windheader + Wind_buffer[i];
        } // end for i= 2,7                                
          Serial.print("Header = "); Serial.println(Windheader);           
-       if (Windheader == "WIMWV")
+       if (Windheader == "WIMWV" || Windheader == "IIMWV")
        {         
          Get_WIMWV();
          Wind_MAX = max(Wind_Speed,Wind_MAX);
@@ -51,6 +51,12 @@ if (SoftSerial1.available() > 0){
          Get_SDDBT();
          Reset_wind_buffer();          
        } 
+
+       if (Windheader == "IIHDT" && !compass_connected) // Heading value via NMEA if no compass connected
+       {
+         Get_IIHDT();
+         Reset_wind_buffer();
+       }
     } // end else
  }  // if (SoftSerial1.available()
 } // void get_Wind2
@@ -105,6 +111,19 @@ void Get_SDDBT() //Depth
       //Serial.print("Depth "); Serial.print(Depth,1);
    }
 } // End get SDDBT
+  /*******************************************************************/
+
+void Get_IIHDT() //Heading
+{
+   j_MAX = 3;  // number of Words in NEMA Sentence, for DBT I am only reading 2nd word, first word is header
+   Parse_Wind();
+   if(checksum_status){
+     string1 = data_IN[1];
+      NEMA_TO_FLOAT(1); // this takes the char data that looks like the wind bearing and converts it to a floating point value
+      heading = float3;
+      //Serial.print("Depth "); Serial.print(Depth,1);
+   }
+} // End get IIHDT
   /*******************************************************************/
 
 void Parse_Wind()

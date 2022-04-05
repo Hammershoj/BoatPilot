@@ -82,7 +82,10 @@ void KeyPressed(char keyin)
               break;     
         } // cfh      
         #if GPS_Used == 1
-          if(!GPS_Available) break;
+          if(!GPS_Available) {
+            Mode = "No GPS";
+          }  
+          else {
            Steering_Mode = 2;
             Mode = "GPS";   
             UTC_timer_old = millis();
@@ -95,7 +98,8 @@ void KeyPressed(char keyin)
             lcd.setCursor(0,3);
             lcd.print("          ");
             lcd.setCursor(0,3);
-            lcd.print(Mode);          
+            lcd.print(Mode);
+          }
           break; 
          #endif
 
