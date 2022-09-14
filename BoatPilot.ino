@@ -18,7 +18,7 @@ COMMONS LICENSING
 *****************************************************************************************************************************/
 
 #include <Keypad.h>
-#include <LiquidCrystal.h>
+//#include <LiquidCrystal.h>
 #include <Wire.h>
 #include <SoftwareSerial.h>
 #include <EEPROM.h>
@@ -30,15 +30,18 @@ COMMONS LICENSING
 #include <ClickEncoder.h>
 #include <TimerOne.h>
 
+/*
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+*/
+
 
 /******       USER INPUT       ********/
 
-#define Compass 1 //  0 for Pololu, 1 for BNO055, 2 for BNO080
+#define Compass 2 //  0 for Pololu, 1 for BNO055, 2 for BNO080
 #define IMU 52 // Used to select Pololu IMUs Versions and calibration set. 
     //Allowed values: 2 IMU9 V2; 93 (jacksIMU9V3); 103 (jacks IMU10V3; 51 (Jacks IMU9V5 #1); 52 (Jacks IMU9 V5 #2)
     //determines which set of calibration data is used these extra versions were added to code 7/11/17 J14.4
@@ -127,7 +130,7 @@ int relay_Engage_solenoid = 8; // pin 10 or pin 10 open relay engaginng solenoid
  boolean Print_UTC = 0;
  boolean print_Nav_Data = 0; // Print_1 Tab
  boolean Print_Motor_Commands = 0;  // prints rudder commands in PID tab
- boolean Print_Rudder_Commands = 0;  // prints rudder commands in PID tab
+ boolean Print_Rudder_Commands = 1;  // prints rudder commands in PID tab
  boolean Print_Anticpate_Turn = 0;  // prints data from void Actual_GPS_Steering to evaluate Anticipate turn function
  int print_level=print_level_max;
 //  print modes for MinIMU9
@@ -307,23 +310,6 @@ float MagVar; //Magnetic Variation E is plus, W is minus
 //******  COMPASS  ***************
 
 boolean compass_connected = true;
-#if Compass == 0
- #include <L3G.h>  // get library from Pololu http://www.pololu.com/product/1268
- #include <LSM303.h>  // get library from Pololu, use version that corresponds to your version of the IMU
- compass_connected = false;
-#endif
-
-#if Compass == 1  // BNO055 compass
- #include <Adafruit_Sensor.h>
- #include <Adafruit_BNO055.h>
- #include <utility/imumaths.h>
- Adafruit_BNO055 bno055 = Adafruit_BNO055(55);
- #define BNO055_SAMPLERATE_DELAY_MS (100)
-  int eeAddress = 0;
-  long bnoID;
-  bool foundCalib = false;
-  bool DataStored = false;
-#endif
 
 #if Compass ==2  // BNO08x compass using BNO08x.ino file
 /*
@@ -347,26 +333,39 @@ boolean compass_connected = true;
   Plug the sensor onto the shield
   Serial.print it out at 115200 baud to serial monitor.
 */
-#include <Wire.h>
-#include "SparkFun_BNO080_Arduino_Library.h" // Click here to get the library: http://librarymanager/All#SparkFun_BNO080
-BNO080 bno08x;
+#include <math.h>
 
+/* SparkFun initialize
+#include "SparkFun_BNO080_Arduino_Library.h" // Click here to get the library: http://librarymanager/All#SparkFun_BNO080
+
+BNO080 bno08x;
+*/
+
+/* Adafruit initialize */
+#include <Adafruit_BNO08x.h>
+#define BNO08X_RESET -1
+Adafruit_BNO08x bno08x(BNO08X_RESET);
+sh2_SensorValue_t sensorValue;
+int heading_avg_n = 0; // heading measurement average counter
+float heading_avg = 0; // average heading over n measurements
 #endif
 
 int bnoCAL_status =0;  //used to send 4 digit cal status to RF remotes
 
+
 #if UseBarometer
-#include <LPS.h>
-LPS ps;
-  float pressure;
-  float altitude;
-  float temperature;
+ #include <LPS.h>
+ LPS ps;
+   float pressure;
+   float altitude;
+   float temperature;
 #endif
 
 // LCD library code:
 //LiquidCrystal lcd(27,28,29,30,31,32); // for traditional LCD wiring
 #include <LiquidCrystal_I2C.h> // for LCD-I2c Serial
 LiquidCrystal_I2C lcd(0x27,20,4); //Addr: 0x27, 20 chars & 4 lines, for serial LCD
+
 
 //  KEYPAD SETUP
 const byte ROWS = 4; //four rows
@@ -500,6 +499,7 @@ boolean toggle = false;
  
 /***********  COMPASS paramters SET UP  **************************************/
 float heading;
+
 float heading_to_steer=0; //  see PID
 float MAG_Heading_Degrees; //LCD_compass tab
 
@@ -598,11 +598,12 @@ void setup() {
   Init_Barometer();
   #endif
 
+/*
   // Initialize OLED display 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // Don't proceed, loop forever
+    return;
   }
   else {
     // Show initial display buffer contents on the screen --
@@ -619,19 +620,16 @@ void setup() {
     display.display();
     delay(500);  
   }
+  */
+  
+  
   // Clear LCD start up info
   lcd.setCursor(0,0);
   lcd.print("                    ");
   lcd.setCursor(0,1);
   lcd.print("                    ");
 
-  // read a byte from the current address of the EEPROM
-  byte value = EEPROM.read(eeAddress);
-
-  Serial.print(eeAddress);
-  Serial.print("\t");
-  Serial.print(value, DEC);
-  Serial.println();
+ 
  }  // end setup
   
 /*********************************************/

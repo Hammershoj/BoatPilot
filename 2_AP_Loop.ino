@@ -34,7 +34,7 @@
           #if Compass == 1
             BNO055();  // Read compass data from Bosch BNO055 sensor
           #endif
-          #if Compass == 2
+          #if Compass == 2 // Read compass data from BNO08x sensor
             BNO08x();
           #endif
           #if Wind_Input ==1

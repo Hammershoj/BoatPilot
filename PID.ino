@@ -53,8 +53,8 @@ RUDDER_MODE
         
           // --------------------------------------------------------- Main compass steering -------------------------------------------------------------
         
-          //  heading_error = heading_to_steer - heading;  // This is the main PID proportional term for compass based steering           
-          heading_error = heading - heading_to_steer;  // This is the main PID proportional term for compass based steering   cfh 11.07.19 changed direction !        
+          heading_error = heading_to_steer - heading;  // This is the main PID proportional term for compass based steering           
+          //heading_error = heading - heading_to_steer;  // This is the main PID proportional term for compass based steering   cfh 11.07.19 changed direction !        
           // heading_error = course - heading_to_steer;  // cfh testing steering based GPS COG
           if (Wind_Steer_Direct == 1 && Steering_Mode == 4) heading_error = -wind_error; // base case wind steer uses wind indicator to dervie a compass course, this mode will just steer wind error
           if (GPS_Steer_Direct == 1 && (Steering_Mode == 2 || Steering_Mode == 22)) heading_error = course_error;// similarly gps steering is compass steering where the error is based on COG - CTS, this mode leaves out the compass

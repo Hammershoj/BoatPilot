@@ -36,9 +36,9 @@ void LCD(){
      if(GPRMC_fix){lcd.print(SOG,1);}
      else{ lcd.print("....");}  
               
-     lcd.setCursor(0,3);
+     lcd.setCursor(0,0);
      lcd.print("          ");
-     lcd.setCursor(0,3);
+     lcd.setCursor(0,0);
      lcd.print(Mode);
   
 
@@ -62,9 +62,9 @@ void LCD(){
      if( RUDDER_MODE == 0)  // IF THERE IS A RUDDER POSITION INDICATOR
     {
      //float rudder_pos = RUDDER_POSITION();
-     lcd.setCursor(5,3);
+     lcd.setCursor(10,3);
      lcd.print("Rud      "); // extra spaces clear old data  cfh 13.06.2019 added one space
-     lcd.setCursor(9,3);
+     lcd.setCursor(14,3);
      lcd.print(rudder_encoder_value);
      //lcd.print(rudder_pos,0);
     }

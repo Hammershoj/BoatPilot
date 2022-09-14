@@ -82,7 +82,7 @@ void KeyPressed(char keyin)
               break;     
         } // cfh      
         #if GPS_Used == 1
-          if(!GPS_Available) {
+          if(!GPRMC_fix) {
             Mode = "No GPS";
           }  
           else {
@@ -95,9 +95,9 @@ void KeyPressed(char keyin)
             XTE_course_correction = 0;
             XTE_integral_error = 0; // allows zeroing out integral error by re-pressing key 2
             Avg_course = course; 
-            lcd.setCursor(0,3);
+            lcd.setCursor(0,0);
             lcd.print("          ");
-            lcd.setCursor(0,3);
+            lcd.setCursor(0,0);
             lcd.print(Mode);
           }
           break; 
