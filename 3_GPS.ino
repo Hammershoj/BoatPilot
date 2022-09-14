@@ -14,19 +14,24 @@
 void GET_sentence() {
     // long loop_time=millis();
      //word_count = 1; // word count counts the commas add one for the star
-if (bufpos > buffer_length -1) Reset_buffer(); //if buffer length exceeded w/o finding byteGPS = 13 toss buffer and start again hope eliminate buffer getting garbage from RF
-if (Serial_GPS.available() > 0){
-    //static int bufpos = 0;
-    byteGPS = Serial_GPS.read();
-    if(byteGPS !=13){
-      gps_buffer[bufpos] = byteGPS;
-      if(byteGPS == ',') word_count_temp = word_count_temp+1;      
-      if (print_NEMA) Serial.write(byteGPS);                                                
-      bufpos++;
-    } // if byteGPS != 13
-    else { Process_GPS_Data();
+  if (bufpos > buffer_length -1) Reset_buffer(); //if buffer length exceeded w/o finding byteGPS = 13 toss buffer and start again hope eliminate buffer getting garbage from RF
+  if (Serial_GPS.available() > 0){
+      //static int bufpos = 0;
+      //Serial.println("We are getting some GPS data...");
+      byteGPS = Serial_GPS.read();
+      if(byteGPS !=13){
+        gps_buffer[bufpos] = byteGPS;
+        if(byteGPS == ',') word_count_temp = word_count_temp+1;      
+        if (print_NEMA) Serial.write(byteGPS);                                                
+        bufpos++;
+      } // if byteGPS != 13
+      else { Process_GPS_Data();
+      }
     }
-  }
+    else {
+      if (print_NEMA) Serial.println("No GPS data...");
+      return;
+    }
 }     
 
 void Process_GPS_Data(){
@@ -34,6 +39,7 @@ void Process_GPS_Data(){
      NEMA_sentence=false;
      gps_buffer[bufpos] = '\0';  // terminate buffer with null character       
      GPSheader = "";
+     //Serial.println("Process GPS data...");
      for (int i=4;i<7;i++){           
        GPSheader = GPSheader + gps_buffer[i];
      } // end for i= 1,7

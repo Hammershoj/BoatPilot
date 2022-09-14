@@ -74,7 +74,7 @@
            if(data_RMC[12]=="A" || data_RMC[12]=="D" && checksum_status){GPRMC_fix = true;}
            else{GPRMC_fix= false;}                 
            if(GPRMC_fix){GPRMC_fix_status = "VALID FIX";}
-           else{ GPRMC_fix_status= "BAD FIX";}  
+           else{GPRMC_fix_status= "BAD FIX";}  
               
      // ETdata.SD_GPRMC_fix = GPRMC_fix;  
       if(GPRMC_fix) NewData = true;              

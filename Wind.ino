@@ -2,15 +2,17 @@
 
 void get_Wind()
 {
-const int print_wind = 0;
+const int print_wind = 1;
 float Kwind = .1; // 1 all new data (unfiltered) .2 (5 samples smoothing) Look into Kalman filter
 if (count_b > wind_buffer_length -1) Reset_wind_buffer(); //if buffer length exceeded w/o finding byteGPS = 13 toss buffer and start again hope eliminate buffer getting garbage from RF
 if (SoftSerial1.available() > 0){
     byteWind = SoftSerial1.read();
+    //Serial.println("Reading Wind data from RS232 ");
     if(byteWind !=13)
     {
       Wind_buffer[count_b] = byteWind;    
-      if (print_wind)Serial.write(byteWind); 
+      if (print_wind) Serial.write(byteWind); 
+      //Serial.println(byteWind);
       if(byteWind>127) //I was getting junk data a y with 2 dots over it ASCII char 255 binary 11111111, could not get out of loop, this fixed it 
         {
           Reset_wind_buffer(); 
@@ -32,14 +34,14 @@ if (SoftSerial1.available() > 0){
        {           
          Windheader = Windheader + Wind_buffer[i];
        } // end for i= 2,7                                
-         // Serial.print("Header = "); Serial.println(Windheader);           
-       if (Windheader == "WIMWV")
+         Serial.print("Header = "); Serial.println(Windheader);           
+       if (Windheader == "WIMWV" || Windheader == "IIMWV")
        {         
          Get_WIMWV();
          Wind_MAX = max(Wind_Speed,Wind_MAX);
          if(!sw2) Wind_MAX = 0;  // sw2 can be used to reset wind max
          Wind_Avg = (1-Kwind) * Wind_Avg + Kwind * Wind_Dir; // set wind average Kwind at beginning of subroutine with wind update 1 Hz Kwind = .2 should be about 5 sec average
-           //  Serial.print(Wind_Dir); Serial.print(" "); Serial.println(Wind_Avg);
+             Serial.print(Wind_Dir); Serial.print(" "); Serial.println(Wind_Avg);
            //  Wind_Differential();
          Reset_wind_buffer();  
          return;  
@@ -49,6 +51,12 @@ if (SoftSerial1.available() > 0){
          Get_SDDBT();
          Reset_wind_buffer();          
        } 
+
+       if (Windheader == "IIHDT" && !compass_connected) // Heading value via NMEA if no compass connected
+       {
+         Get_IIHDT();
+         Reset_wind_buffer();
+       }
     } // end else
  }  // if (SoftSerial1.available()
 } // void get_Wind2
@@ -66,7 +74,7 @@ void Reset_wind_buffer()
 
 void Get_WIMWV()
    {
-    const int print_MWV = 0;
+    const int print_MWV = 1;
     j_MAX = 5;  // number of Words in NEMA Sentence
     Parse_Wind ();
     //Serial.print("Checksum Status "); Serial.println(checksum_status);
@@ -94,15 +102,28 @@ void Get_WIMWV()
 
 void Get_SDDBT() //Depth
 {
-   j_MAX = 2;  // number of Words in NEMA Sentence, for DBT I am only reading 2nd word, first word is header
+   j_MAX = 4;  // number of Words in NEMA Sentence, for DBT I am only reading 2nd word, first word is header
    Parse_Wind();
    if(checksum_status){
-     string1 = data_IN[1];
+     string1 = data_IN[3];
       NEMA_TO_FLOAT(1); // this takes the char data that looks like the wind bearing and converts it to a floating point value
       Depth = float3;
       //Serial.print("Depth "); Serial.print(Depth,1);
    }
 } // End get SDDBT
+  /*******************************************************************/
+
+void Get_IIHDT() //Heading
+{
+   j_MAX = 3;  // number of Words in NEMA Sentence, for DBT I am only reading 2nd word, first word is header
+   Parse_Wind();
+   if(checksum_status){
+     string1 = data_IN[1];
+      NEMA_TO_FLOAT(1); // this takes the char data that looks like the wind bearing and converts it to a floating point value
+      heading = float3;
+      //Serial.print("Depth "); Serial.print(Depth,1);
+   }
+} // End get IIHDT
   /*******************************************************************/
 
 void Parse_Wind()
@@ -130,6 +151,7 @@ void Parse_Wind()
                                {
                                  data_IN[j] = data_IN[j].substring(0,data_IN[j].length() - 1); //cuts off last character which is comma or star
                                 // Word_count = Word_count +1;
+                                Serial.println(data_IN[j]);
                                  break; 
                                }   
                        }  // end for k
